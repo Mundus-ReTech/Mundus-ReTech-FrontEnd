@@ -10,3 +10,32 @@ a { color: #7cc7ff; }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #2a8cff33; background: #2a8cff22; }
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .toolbar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
+.Landing-Page-Header-Content {
+  background-image: url('./assets/reTech-Background-Landing-Page.png');
+  background-size: cover;        /* fills area */
+  background-position: center;   /* keeps subject centered */
+  background-repeat: no-repeat;
+
+  width: 100%;                   /* full width */
+  min-height:700px;
+  max-height: 100vh;             /* full viewport height */
+  display: flex;                 /* center text */
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;       /* or center, depending on your design */
+  padding: 2rem;
+  color: #e6eef7;                /* ensure text is readable */
+}
+.Landing-Page-Header-Content::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.397); /* dark overlay */
+  z-index: 0;
+}
+
+.Landing-Page-Header-Content > * {
+  position: relative;
+  z-index: 1; /* keeps text above overlay */
+}

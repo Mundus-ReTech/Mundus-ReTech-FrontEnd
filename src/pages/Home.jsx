@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import api from '../lib/http'
 import ListingCard from '../components/ListingCard.jsx'
+import LandingPage from "./landingPage.jsx";
 import Filters from '../components/Filters.jsx'
 
 export default function Home() {
@@ -23,14 +24,17 @@ export default function Home() {
   useEffect(() => { fetchListings() }, [])
 
   return (
-    <div className="container">
-      <Filters value={filters} onChange={setFilters} onApply={fetchListings} />
-      <div style={{marginBottom:8}}>{count} results</div>
-      {loading ? <div>Loading…</div> : (
-        <div className="grid">
-          {items.map(it => <ListingCard key={it._id} item={it} />)}
-        </div>
-      )}
+    // <div className="container">
+    //   <Filters value={filters} onChange={setFilters} onApply={fetchListings} />
+    //   <div style={{marginBottom:8}}>{count} results</div>
+    //   {loading ? <div>Loading…</div> : (
+    //     <div className="grid">
+    //       {items.map(it => <ListingCard key={it._id} item={it} />)}
+    //     </div>
+    //   )}
+    // </div>
+    <div>
+      <LandingPage/>
     </div>
   )
 }
