@@ -7,6 +7,8 @@ import LandingPage from "./pages/landingPage";
 import PartnersPage from "./pages/PartnersPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import AccountPage from "./pages/AccountPage";
+import SignUp from './pages/SignUp';
+import Login from "./pages/LogIn";
 
 export default function App() {
   return (
@@ -19,6 +21,10 @@ export default function App() {
           <Route path="/partners" element={<PartnersPage />} />
            <Route path="/categories" element={<CategoriesPage />} />
              <Route path="/account" element={<AccountPage />} />
+             <Route path ="/signup" element= {<SignUp/>}/>
+             <Route path="/login" element={<Login
+              />
+             }/>
       </Routes>
     </div>
   );
