@@ -58,11 +58,13 @@ export default function SignUp() {
                   onChange={handleChange}
                   fullWidth
                   required
+                  color="white"
                 />
                 <TextField
                   label="Email"
                   name="email"
                   type="email"
+                  style={{color:'white'}}
                   onChange={handleChange}
                   fullWidth
                   required
