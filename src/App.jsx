@@ -9,8 +9,17 @@ import CategoriesPage from "./pages/CategoriesPage";
 import AccountPage from "./pages/AccountPage";
 import SignUp from './pages/SignUp';
 import Login from "./pages/LogIn";
+import SmallBusinessDashboard from "./pages/SmallBusinessDashboard";
+import EnterpriseBusinessDashboard from "./pages/EnterpriseBusinessDashboard";
 
 export default function App() {
+function RequireRole({ roles, children }) {
+  const user = useAuthUser(); // from your auth provider
+  if (!user) return <Navigate to="/login" replace />;
+  return roles.includes(user.role) ? children : <Navigate to="/" replace />;
+}
+
+
   return (
     <div>
       <Navbar />
@@ -25,6 +34,16 @@ export default function App() {
              <Route path="/login" element={<Login
               />
              }/>
+
+             <Route
+  path="/dashboard/smb"
+  element={
+  
+      <SmallBusinessDashboard />
+  
+  }
+/>
+<Route path="/enterprise" element={<EnterpriseBusinessDashboard />} />
       </Routes>
     </div>
   );

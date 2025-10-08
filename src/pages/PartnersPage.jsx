@@ -9,16 +9,21 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
-import DescriptionIcon from "@mui/icons-material/Description";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import TimelineIcon from "@mui/icons-material/Timeline";
 import StoreIcon from "@mui/icons-material/Store";
 
 export default function PartnersPage() {
   return (
-    <Box sx={{ bgcolor: "#0b0f14", color: "#e6eef7" }}>
+    <Box
+      sx={{
+        bgcolor: "#0b0f14",
+        color: "#e6eef7",
+        "& .MuiTypography-root": { color: "rgba(230,238,247,0.92)" },
+        "& a, & .MuiLink-root": { color: "rgba(230,238,247,0.9)" },
+      }}
+    >
       {/* HERO */}
       <Box sx={{ position: "relative", minHeight: { xs: "48vh", md: "56vh" }, display: "flex", alignItems: "center" }}>
         <Box
@@ -42,7 +47,7 @@ export default function PartnersPage() {
               }}
             />
             <Typography variant="h2" sx={{ fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.05 }}>
-              Turn surplus into revenue—without the friction.
+              Turn surplus into revenue without the friction.
             </Typography>
             <Typography variant="h6" sx={{ color: "rgba(230,238,247,0.78)" }}>
               Retech gives you compliant offloading, fast payouts, and ready demand. Upload once, move inventory, and get
@@ -74,10 +79,50 @@ export default function PartnersPage() {
               <Card elevation={0} sx={quietCard}>
                 <CardContent sx={{ p: 3 }}>
                   <Avatar variant="rounded" sx={iconAvatar}>{v.icon}</Avatar>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mt: 1.5,color: "rgba(255, 255, 255, 0.72)" }}>{v.title}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mt: 1.5 }}>
+                    {v.title}
+                  </Typography>
                   <Typography sx={{ color: "rgba(255, 255, 255, 0.72)" }}>{v.desc}</Typography>
                 </CardContent>
               </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+
+      {/* NEW — INDUSTRIES WE PARTNER WITH */}
+      <Container sx={{ py: { xs: 6, md: 8 } }}>
+        <SectionTitle>Industries we partner with</SectionTitle>
+        <Typography sx={{ color: "rgba(230,238,247,0.78)", mb: 2 }}>
+          We help organizations across sectors safely redeploy or monetize surplus technology — ensuring compliance and
+          widening access through our school affiliate network.
+        </Typography>
+
+        <Grid container spacing={1.25}>
+          {[
+            "AV & IT (Crestron, AMX, Q-SYS, Cisco)",
+            "Enterprise & Finance (banks, insurance)",
+            "Healthcare & Medical Devices",
+            "Biotech & Laboratory Equipment",
+            "Data Center & Networking",
+            "Manufacturing & Industrial (PLC, robotics)",
+            "Telecom & Broadcasting",
+            "Education & Nonprofit",
+            "Retail & POS Systems",
+            "Hospitality & Events",
+            "Transportation & Logistics",
+            "Energy & Utilities",
+            "Public Sector & Municipal",
+          ].map((tag) => (
+            <Grid key={tag} item>
+              <Chip
+                label={tag}
+                sx={{
+                  ...chipQuiet,
+                  borderColor: "rgba(42,140,255,0.35)",
+                  bgcolor: "rgba(42,140,255,0.08)",
+                }}
+              />
             </Grid>
           ))}
         </Grid>
@@ -113,7 +158,9 @@ export default function PartnersPage() {
               <Card elevation={0} sx={quietCard}>
                 <CardContent sx={{ p: 3 }}>
                   <Chip label={`Step ${s.step}`} size="small" sx={chipQuiet} />
-                  <Typography variant="h6" sx={{ fontWeight: 700, mt: 1 }}>{s.title}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mt: 1 }}>
+                    {s.title}
+                  </Typography>
                   <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>{s.desc}</Typography>
                 </CardContent>
               </Card>
@@ -139,12 +186,95 @@ export default function PartnersPage() {
                 <CardContent sx={{ p: 3 }}>
                   <Stack direction="row" spacing={1.25} alignItems="flex-start">
                     <Avatar sx={miniCheck}><VerifiedIcon fontSize="small" /></Avatar>
-                    <Typography sx={{ color: "rgba(230,238,247,0.84)" }}>{b}</Typography>
+                    <Typography sx={{ color: "rgba(230,238,247,0.88)" }}>{b}</Typography>
                   </Stack>
                 </CardContent>
               </Card>
             </Grid>
           ))}
+        </Grid>
+      </Container>
+
+      {/* NEW — SCHOOL AFFILIATE PROGRAM */}
+      <Container sx={{ py: { xs: 6, md: 8 } }}>
+        <SectionTitle>School Affiliate Program</SectionTitle>
+
+        <Grid container spacing={3} alignItems="stretch">
+          <Grid item xs={12} md={7}>
+            <Card elevation={0} sx={{ ...quietCard, height: "100%" }}>
+              <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
+                  Access cross-industry gear at educational pricing
+                </Typography>
+                <Typography sx={{ color: "rgba(230,238,247,0.78)", mb: 2 }}>
+                  Approved K-12, higher-ed, and nonprofit schools get priority access to surplus from enterprise,
+                  healthcare, finance, manufacturing, AV, and more — all vetted, graded, and ready to deploy in labs,
+                  classrooms, and maker spaces.
+                </Typography>
+
+                <Grid container spacing={1.25} sx={{ mb: 2 }}>
+                  {[
+                    "Laptops, tablets, Chromebooks",
+                    "Switches, Wi-Fi, security gateways",
+                    "AV gear (projectors, DSPs, controllers)",
+                    "Medical & lab devices (where eligible)",
+                    "Monitors, components, accessories",
+                    "Certified data-wiped equipment",
+                  ].map((t) => (
+                    <Grid item key={t}>
+                      <Chip label={t} sx={chipQuiet} />
+                    </Grid>
+                  ))}
+                </Grid>
+
+                <Typography sx={{ color: "rgba(230,238,247,0.78)" }}>
+                  We align inventory pipelines from large organizations to school needs in NYC, Westchester, and beyond,
+                  with transparent grading and documentation for your asset records.
+                </Typography>
+
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mt: 3 }}>
+                  <Button
+                    component={RouterLink}
+                    to="/partners#apply"
+                    variant="contained"
+                    sx={{ bgcolor: "#e6eef7", color: "#0b0f14", fontWeight: 700, "&:hover": { bgcolor: "#cfe0f4" } }}
+                  >
+                    Join the program
+                  </Button>
+                  <Button
+                    component={RouterLink}
+                    to="/categories"
+                    variant="text"
+                    sx={{ color: "rgba(255,255,255,0.88)" }}
+                  >
+                    Browse current inventory
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={5}>
+            <Card elevation={0} sx={{ ...quietCard, height: "100%", position: "relative", overflow: "hidden" }}>
+              <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
+                  How it works for schools
+                </Typography>
+                <Stack spacing={1.25}>
+                  <ReqItem text="Apply with your DOE/EDU credentials (or nonprofit docs)" />
+                  <ReqItem text="Get verified and receive school pricing access" />
+                  <ReqItem text="Reserve items, choose pickup or shipping" />
+                  <ReqItem text="Receive grading docs + wipe attestations" />
+                </Stack>
+
+                <Divider sx={{ my: 2, borderColor: "rgba(255,255,255,0.08)" }} />
+
+                <Typography sx={{ color: "rgba(230,238,247,0.78)" }}>
+                  Want to feed your school pipeline? Districts can set standing requests (e.g., “100 Chromebooks / quarter”).
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
       </Container>
 
@@ -175,15 +305,15 @@ export default function PartnersPage() {
                 <Stack spacing={1.25}>
                   <Stack direction="row" spacing={1.25} alignItems="center">
                     <Avatar sx={miniIcon}><PaymentsIcon fontSize="small" /></Avatar>
-                    <Typography sx={{ color: "rgba(230,238,247,0.78)" }}>
+                    <Typography sx={{ color: "rgba(230,238,247,0.88)" }}>
                       Typical split: <b>70% partner / 30% marketplace</b> (varies by volume & category).
                     </Typography>
                   </Stack>
-                  <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>
+                  <Typography sx={{ color: "rgba(230,238,247,0.78)" }}>
                     We handle payments, buyer protection, and support. Payouts are deposited weekly with a full statement.
                   </Typography>
                   <Divider sx={{ my: 1.5, borderColor: "rgba(255,255,255,0.08)" }} />
-                  <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>
+                  <Typography sx={{ color: "rgba(230,238,247,0.78)" }}>
                     Ask about volume pricing, enterprise compliance, and white-glove pickups.
                   </Typography>
                 </Stack>
@@ -205,9 +335,9 @@ export default function PartnersPage() {
             <Grid key={t.name} item xs={12} md={4}>
               <Card elevation={0} sx={quietCard}>
                 <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-                  <Typography sx={{ color: "rgba(230,238,247,0.78)" }}>"{t.quote}"</Typography>
+                  <Typography sx={{ color: "rgba(230,238,247,0.88)" }}>"{t.quote}"</Typography>
                   <Divider sx={{ my: 2, borderColor: "rgba(255,255,255,0.08)" }} />
-                  <Typography variant="subtitle2" sx={{ opacity: 0.85 }}>{t.name}</Typography>
+                  <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>{t.name}</Typography>
                 </CardContent>
               </Card>
             </Grid>
@@ -229,7 +359,7 @@ export default function PartnersPage() {
               <Typography sx={{ fontWeight: 600 }}>{f.q}</Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>{f.a}</Typography>
+              <Typography sx={{ color: "rgba(230,238,247,0.78)" }}>{f.a}</Typography>
             </AccordionDetails>
           </Accordion>
         ))}
@@ -239,10 +369,10 @@ export default function PartnersPage() {
       <Container id="apply" sx={{ py: { xs: 6, md: 8 } }}>
         <Card elevation={0} sx={quietCard}>
           <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, mb: 1, color: "black" }} bgcolor={'#000000'}>
               Apply to become a partner
             </Typography>
-            <Typography sx={{ color: "rgba(230,238,247,0.72)", mb: 3 }}>
+            <Typography sx={{ color: "rgba(230,238,247,0.78)", mb: 3 }}>
               Tell us about your organization and inventory. We’ll get back to you quickly.
             </Typography>
             <Grid container spacing={2}>
@@ -274,8 +404,8 @@ export default function PartnersPage() {
               >
                 Submit inquiry
               </Button>
-              <Typography sx={{ color: "rgba(230,238,247,0.64)", ml: 2 }}>
-                Prefer email? <Link component={RouterLink} to="/contact" color="rgba(230,238,247,0.84)">Contact us</Link>
+              <Typography sx={{ color: "rgba(230,238,247,0.78)", ml: 2 }}>
+                Prefer email? <Link component={RouterLink} to="/contact" color="rgba(230,238,247,0.9)">Contact us</Link>
               </Typography>
             </CardActions>
           </CardContent>
@@ -287,15 +417,15 @@ export default function PartnersPage() {
       <Container sx={{ py: 4 }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={6}>
-            <Typography sx={{ color: "rgba(230,238,247,0.64)" }}>
+            <Typography sx={{ color: "rgba(230,238,247,0.78)" }}>
               © {new Date().getFullYear()} Retech. Partners.
             </Typography>
           </Grid>
           <Grid item xs={12} md={6}>
             <Stack direction="row" spacing={2} justifyContent={{ xs: "flex-start", md: "flex-end" }}>
-              <Link component={RouterLink} to="/privacy" color="rgba(230,238,247,0.84)">Privacy</Link>
-              <Link component={RouterLink} to="/terms" color="rgba(230,238,247,0.84)">Terms</Link>
-              <Link component={RouterLink} to="/contact" color="rgba(230,238,247,0.84)">Contact</Link>
+              <Link component={RouterLink} to="/privacy" color="rgba(230,238,247,0.9)">Privacy</Link>
+              <Link component={RouterLink} to="/terms" color="rgba(230,238,247,0.9)">Terms</Link>
+              <Link component={RouterLink} to="/contact" color="rgba(230,238,247,0.9)">Contact</Link>
             </Stack>
           </Grid>
         </Grid>
@@ -313,7 +443,8 @@ const quietCard = {
 const chipQuiet = {
   bgcolor: "transparent",
   border: "1px solid rgba(255,255,255,0.12)",
-  color: "rgba(255,255,255,0.72)",
+  color: "rgba(255,255,255,0.78)",
+  backdropFilter: "blur(4px)",
 };
 const iconAvatar = {
   bgcolor: "rgba(255,255,255,0.06)",
@@ -346,8 +477,9 @@ const textFieldStyle = {
   "& .MuiInputBase-root": {
     bgcolor: "rgba(255,255,255,0.03)",
     borderRadius: 2,
-    color: "rgba(255,255,255,0.9)",
+    color: "rgba(255,255,255,0.92)",
   },
+  "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.75)" },
   "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
   "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
 };
@@ -363,8 +495,8 @@ function SectionTitle({ children }) {
 function ReqItem({ text }) {
   return (
     <Stack direction="row" spacing={1.25} alignItems="flex-start">
-      <Avatar sx={miniCheck}><InventoryIcon fontSize="small" /></Avatar>
-      <Typography sx={{ color: "rgba(230,238,247,0.84)" }}>{text}</Typography>
+      <Avatar sx={miniCheck}><VerifiedIcon fontSize="small" /></Avatar>
+      <Typography sx={{ color: "rgba(230,238,247,0.9)" }}>{text}</Typography>
     </Stack>
   );
 }

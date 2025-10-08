@@ -8,8 +8,10 @@ import {
   Paper,
   Stack,
   Link,
+  Divider,
 } from "@mui/material";
 import { NavLink } from "react-router-dom";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -24,6 +26,21 @@ export default function Login() {
     // send login data to backend API here
   };
 
+  // shared style for white text inputs
+  const whiteInput = {
+    "& .MuiInputBase-root": {
+      color: "white",
+      bgcolor: "rgba(255,255,255,0.05)",
+      borderRadius: 1.5,
+    },
+    "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.7)" },
+    "& .MuiOutlinedInput-root": {
+      "& fieldset": { borderColor: "rgba(255,255,255,0.2)" },
+      "&:hover fieldset": { borderColor: "rgba(255,255,255,0.4)" },
+      "&.Mui-focused fieldset": { borderColor: "#2a8cff" },
+    },
+  };
+
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>
       <Paper
@@ -32,7 +49,7 @@ export default function Login() {
       >
         <Typography
           variant="h4"
-          sx={{ fontWeight: 800, mb: 3, textAlign: "center" }}
+          sx={{ fontWeight: 800, mb: 3, textAlign: "center", color: "#fff" }}
         >
           Log in to your account
         </Typography>
@@ -46,6 +63,7 @@ export default function Login() {
               onChange={handleChange}
               fullWidth
               required
+              sx={whiteInput}
             />
             <TextField
               label="Password"
@@ -54,6 +72,7 @@ export default function Login() {
               onChange={handleChange}
               fullWidth
               required
+              sx={whiteInput}
             />
 
             <Button
@@ -68,6 +87,32 @@ export default function Login() {
               }}
             >
               Log In
+            </Button>
+
+            <Divider sx={{ my: 2, borderColor: "rgba(255,255,255,0.15)" }}>
+              or
+            </Divider>
+
+            {/* ID.me Button */}
+            <Button
+              variant="outlined"
+              startIcon={<VerifiedUserIcon />}
+              fullWidth
+              sx={{
+                borderColor: "#00c26d",
+                color: "#00c26d",
+                fontWeight: 700,
+                py: 1.2,
+                "&:hover": {
+                  bgcolor: "rgba(0,194,109,0.1)",
+                  borderColor: "#00d67a",
+                },
+              }}
+              onClick={() => {
+                window.location.href = "https://www.id.me"; // Replace with your actual OAuth redirect
+              }}
+            >
+              Log in with ID.me
             </Button>
           </Stack>
         </Box>
