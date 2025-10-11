@@ -11,6 +11,7 @@ import SignUp from './pages/SignUp';
 import Login from "./pages/LogIn";
 import SmallBusinessDashboard from "./pages/SmallBusinessDashboard";
 import EnterpriseBusinessDashboard from "./pages/EnterpriseBusinessDashboard";
+import NewListingPage from "./pages/NewListing";
 
 export default function App() {
 function RequireRole({ roles, children }) {
@@ -44,6 +45,8 @@ function RequireRole({ roles, children }) {
   }
 />
 <Route path="/enterprise" element={<EnterpriseBusinessDashboard />} />
+<Route path= "/sell/new" element= {<NewListingPage/>} /> 
+
       </Routes>
     </div>
   );
