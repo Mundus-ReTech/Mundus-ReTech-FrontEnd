@@ -17,11 +17,14 @@
     "axios": "^1.7.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-error-boundary": "^6.0.0",
     "react-hook-form": "^7.65.0",
     "react-router-dom": "^6.26.1"
   },
   "devDependencies": {
+    "@tanstack/react-query-devtools": "^5.91.1",
     "@vitejs/plugin-react": "^4.3.1",
+    "baseline-browser-mapping": "^2.9.6",
     "vite": "^5.4.2"
   }
 }

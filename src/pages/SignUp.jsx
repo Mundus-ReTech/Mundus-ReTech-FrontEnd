@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState} from "react";
 import {
   Box,
   Container,
@@ -13,8 +13,11 @@ import {
   Divider,
 } from "@mui/material";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+// import { AuthContext } from "../contexts/AuthContext";
+// import { useCreateAuth } from "../api/modules/createAuth";
 
 export default function SignUp() {
+  const [alert, setAlert] = useState(null);
   const [role, setRole] = useState("individual");
   const [form, setForm] = useState({});
 
@@ -22,10 +25,22 @@ export default function SignUp() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Form data:", { role, ...form });
     // send data to backend API here
+    if (form.password !== form.confirmPassword) {
+      alert("Passwords do not match!");
+    } else {
+      try {
+        // const results = await Promise.all([useCreateAuth({ ...form }).catch(() => null)]);
+        // return results;
+      } catch {
+        console.error("Error during sign up process");
+      }
+    }
   };
 
   // Shared TextField style for white text on dark bg
@@ -78,8 +93,8 @@ export default function SignUp() {
           <Tab value="individual" label="Individual" />
           <Tab value="business" label="Business" />
         </Tabs>
-
-        {/* Form */}
+          {/* Form */}
+        {/* <AuthContext.Provider value={form}> */}
         <Box component="form" onSubmit={handleSubmit}>
           <Stack spacing={2}>
             {role === "individual" && (
@@ -236,6 +251,8 @@ export default function SignUp() {
             </Button>
           </Stack>
         </Box>
+           {/* </AuthContext.Provider> */}
+       
       </Paper>
     </Container>
   );

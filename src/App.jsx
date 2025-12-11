@@ -13,6 +13,7 @@ import SmallBusinessDashboard from "./pages/SmallBusinessDashboard";
 import EnterpriseBusinessDashboard from "./pages/EnterpriseBusinessDashboard";
 import NewListingPage from "./pages/NewListing";
 
+
 export default function App() {
 function RequireRole({ roles, children }) {
   const user = useAuthUser(); // from your auth provider
@@ -22,31 +23,23 @@ function RequireRole({ roles, children }) {
 
 
   return (
+    
     <div>
+
+      
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/listing/:id" element={<ListingPage />} />
         <Route path="/" element={<LandingPage />} />
-          <Route path="/partners" element={<PartnersPage />} />
-           <Route path="/categories" element={<CategoriesPage />} />
-             <Route path="/account" element={<AccountPage />} />
-             <Route path ="/signup" element= {<SignUp/>}/>
-             <Route path="/login" element={<Login
-              />
-             }/>
-
-             <Route
-  path="/dashboard/smb"
-  element={
-  
-      <SmallBusinessDashboard />
-  
-  }
-/>
-<Route path="/enterprise" element={<EnterpriseBusinessDashboard />} />
-<Route path= "/sell/new" element= {<NewListingPage/>} /> 
-
+        <Route path="/partners" element={<PartnersPage />} />
+        <Route path="/categories" element={<CategoriesPage />} />
+        <Route path="/account" element={<AccountPage />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/login" element={<Login/>} />
+        <Route path="/dashboard/smb" element={<SmallBusinessDashboard />}/>
+        <Route path="/enterprise" element={<EnterpriseBusinessDashboard />} />
+        <Route path="/sell/new" element={<NewListingPage />} />
       </Routes>
     </div>
   );
