@@ -1,52 +1,98 @@
 import React, { useMemo, useState } from "react";
 import {
-  Box, Container, Grid, Paper, Typography, TextField, Button, Stack, MenuItem,
-  Chip, Divider, Snackbar, Alert, FormControlLabel, Switch, InputAdornment,
-  IconButton, Tooltip, Avatar
+  Box,
+  Container,
+  Grid,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  Stack,
+  MenuItem,
+  Divider,
+  Snackbar,
+  Alert,
+  FormControlLabel,
+  Switch,
+  InputAdornment,
+  IconButton,
+  Tooltip,
+  Avatar,
+  Select,
+  OutlinedInput,
+  Chip,
+  formControlClasses,
 } from "@mui/material";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import api from "../lib/http"; // <-- your axios instance (baseURL=/api)
+import api from "../lib/http";
 
-const CONDITIONS = ["NEW","LIKE_NEW","REFURBISHED","GOOD","FAIR","FOR_PARTS"];
-
-const INDUSTRIES = [
-  "General IT", "AV / Pro Audio", "Networking", "Education",
-  "Healthcare / Medical", "Broadcast", "Manufacturing / Industrial", "Other"
-];
+const CONDITIONS = ["NEW", "LIKE_NEW", "REFURBISHED", "GOOD", "FAIR", "FOR_PARTS"];
 
 const CATEGORIES = [
-  "Laptop","Desktop","Tablet","Phone","Monitor","Server",
-  "Networking","AV Controller","Camera","Component","Accessory","Other"
+  "Laptop",
+  "Desktop",
+  "Tablet",
+  "Phone",
+  "Monitor",
+  "Server",
+  "Networking",
+  "AV Controller",
+  "Camera",
+  "Component",
+  "Accessory",
+  "Other",
+];
+
+// example lists — adjust to your app’s taxonomy
+const TECH_TYPES = [
+  "General IT",
+  "AV / Pro Audio",
+  "Networking",
+  "Education",
+  "Healthcare / Medical",
+  "Broadcast",
+  "Manufacturing / Industrial",
+  "Other",
 ];
 
 const DEVICE_TYPES = [
-  "MacBook","ThinkPad","Chromebook","iPad","iPhone",
-  "Crestron Controller","AMX Controller","Cisco Switch",
-  "Q-SYS Core","Router","AP","Monitor","Server","Other"
+  "MacBook",
+  "ThinkPad",
+  "Chromebook",
+  "iPad",
+  "iPhone",
+  "Crestron Controller",
+  "AMX Controller",
+  "Cisco Switch",
+  "Q-SYS Core",
+  "Router",
+  "AP",
+  "Monitor",
+  "Server",
+  "Other",
 ];
 
 const textFieldStyle = {
   "& .MuiInputBase-root": {
     bgcolor: "rgba(255,255,255,0.03)",
     borderRadius: 2,
-    color: "rgba(255,255,255,0.92)"
+    color: "rgba(255,255,255,0.92)",
   },
   "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.75)" },
   "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
-  "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" }
+  "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
 };
 
 const quietCard = {
   bgcolor: "rgba(255,255,255,0.02)",
   border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 3
+  borderRadius: 3,
 };
 
 export default function NewListingPage() {
@@ -55,33 +101,33 @@ export default function NewListingPage() {
   const [images, setImages] = useState([]); // File[] for upload preview
 
   const {
-    control, handleSubmit, watch, setValue, formState: { errors, isSubmitting }
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
       title: "",
       description: "",
       brand: "",
       model: "",
-      industry: "",
-      category: "",
-      deviceType: "",
+      make: "",
+      category: "Other",
+      techTypes: [],
+      deviceTypes: [],
       condition: "GOOD",
-      quantity: 1,
-      price: "",
-      sku: "",
-      serial: "",
-      gradeNotes: "",
-      shippingEnabled: true,
+      rescuePrice: "",
+      serialnumber: "",
+      macaddress: "",
       pickupEnabled: true,
-      pickupAddress1: "",
-      pickupAddress2: "",
+      pickupStreet: "",
       pickupCity: "",
       pickupState: "",
       pickupZip: "",
-    }
+      status: "ACTIVE",
+    },
   });
 
-  const shippingEnabled = watch("shippingEnabled");
   const pickupEnabled = watch("pickupEnabled");
 
   const imagePreviews = useMemo(
@@ -92,7 +138,7 @@ export default function NewListingPage() {
   const onSelectImages = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    const next = [...images, ...files].slice(0, 10); // limit to 10
+    const next = [...images, ...files].slice(0, 10);
     setImages(next);
   };
 
@@ -104,54 +150,71 @@ export default function NewListingPage() {
 
   const onSubmit = async (values) => {
     try {
-      // 1) Upload images (simple: multipart to /uploads)
-      let photoUrls = [];
-      if (images.length) {
-        const formData = new FormData();
-        images.forEach((f) => formData.append("files", f));
-        const up = await api.post("/uploads", formData, {
-          headers: { "Content-Type": "multipart/form-data" }
-        });
-        photoUrls = up.data?.urls || []; // backend should return array of URLs
+      // ✅ person id (seller) — using what you already store at login
+      const userId =
+        localStorage.getItem("userId") ||
+        (() => {
+          try {
+            const u = JSON.parse(localStorage.getItem("user") || "{}");
+            return u?._id || u?.id || "";
+          } catch {
+            return "";
+          }
+        })();
+
+      if (!userId) {
+        setToast({ open: true, type: "error", msg: "Missing user id. Please log in again." });
+        return;
       }
 
-      // 2) Create listing payload
+      // 1) Upload images
+      // let photoUrls = [];
+      // if (images.length) {
+      //   const formData = new FormData();
+      //   images.forEach((f) => formData.append("files", f));
+        // const up = await api.post("http://localhost:8080/v1/createlisting", formData);
+        // photoUrls = up.data?.urls || [];
+      // }
+
+      // photos required in new model
+      // if (!photoUrls.length) {
+      //   setToast({ open: true, type: "error", msg: "Please upload at least 1 photo." });
+      //   return;
+      // }
+
+      // 2) Create listing payload (✅ matches your new schema)
       const payload = {
+        id: userId, // required (person id)
         title: values.title,
         description: values.description,
         brand: values.brand || undefined,
         model: values.model || undefined,
-        industry: values.industry || "General IT",
+        make: values.make || undefined,
         category: values.category || "Other",
-        deviceType: values.deviceType || "Other",
+        techTypes: Array.isArray(values.techTypes) ? values.techTypes : [],
+        deviceTypes: Array.isArray(values.deviceTypes) ? values.deviceTypes : [],
         condition: values.condition,
-        quantity: Number(values.quantity || 1),
-        rescuePrice: Number(values.price || 0),
-        sku: values.sku || undefined,
-        serial: values.serial || undefined,
-        gradeNotes: values.gradeNotes || undefined,
-        photos: photoUrls,
-        shipping: {
-          enabled: shippingEnabled,
-        },
-        pickup: pickupEnabled ? {
-          address: {
-            line1: values.pickupAddress1,
-            line2: values.pickupAddress2 || "",
-            city: values.pickupCity,
-            state: values.pickupState,
-            zip: values.pickupZip
-          }
-        } : undefined,
-        status: "ACTIVE"
+        rescuePrice: Number(values.rescuePrice || 0),
+        status: values.status || "ACTIVE",
+        // photos: photoUrls,
+        serialnumber: values.serialnumber || undefined,
+        macaddress: values.macaddress || undefined,
+        pickup: values.pickupEnabled
+          ? {
+              address: {
+                zip: values.pickupZip || "",
+                city: values.pickupCity || "",
+                state: values.pickupState || "",
+                street: values.pickupStreet || "",
+              },
+            }
+          : undefined,
       };
 
       // 3) POST listing
-      const { data } = await api.post("/listings", payload);
-
+      const data  = await api.post("http://localhost:8080/v1/createlisting", payload);
       setToast({ open: true, type: "success", msg: "Listing created!" });
-      // navigate to detail or seller dashboard
-      setTimeout(() => navigate(`/listing/${data?._id || ""}`), 600);
+      setTimeout(() => navigate(`/listing/${data?._id || data?.id || ""}`), 600);
     } catch (err) {
       console.error(err);
       setToast({ open: true, type: "error", msg: "Failed to create listing." });
@@ -164,7 +227,7 @@ export default function NewListingPage() {
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
           <Stack direction="row" spacing={1.25} alignItems="center">
             <Avatar sx={{ bgcolor: "rgba(255,255,255,0.06)" }}>
-              <Inventory2Icon />
+              <Inventory2Icon sx={{ color: "white" }} />
             </Avatar>
             <Typography variant="h4" sx={{ fontWeight: 800 }}>
               New Listing
@@ -174,17 +237,25 @@ export default function NewListingPage() {
             onClick={handleSubmit(onSubmit)}
             variant="contained"
             disabled={isSubmitting}
-            sx={{ bgcolor: "#e6eef7", color: "#0b0f14", fontWeight: 800, "&:hover": { bgcolor: "#cfe0f4" } }}
+            sx={{
+              bgcolor: "#e6eef7",
+              color: "#0b0f14",
+              fontWeight: 800,
+              "&:hover": { bgcolor: "#cfe0f4" },
+            }}
           >
             {isSubmitting ? "Saving…" : "Publish"}
           </Button>
         </Stack>
 
         <Grid container spacing={2.5}>
-          {/* LEFT: Primary details */}
+          {/* LEFT */}
           <Grid item xs={12} md={8}>
             <Paper elevation={0} sx={{ ...quietCard, p: { xs: 2, md: 3 } }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>Basics</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 1, color: "white" }}>
+                Basics
+              </Typography>
+
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <Controller
@@ -204,6 +275,7 @@ export default function NewListingPage() {
                     )}
                   />
                 </Grid>
+
                 <Grid item xs={12}>
                   <Controller
                     name="description"
@@ -228,53 +300,44 @@ export default function NewListingPage() {
 
               <Divider sx={{ my: 2, borderColor: "rgba(255,255,255,0.08)" }} />
 
-              <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>Classification</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 1, color: "white" }}>
+                Classification
+              </Typography>
+
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Controller
-                    name="industry"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField {...field} label="Industry" select fullWidth sx={textFieldStyle}>
-                        {INDUSTRIES.map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}
-                      </TextField>
-                    )}
-                  />
-                </Grid>
                 <Grid item xs={12} sm={6}>
                   <Controller
                     name="category"
                     control={control}
                     render={({ field }) => (
                       <TextField {...field} label="Category" select fullWidth sx={textFieldStyle}>
-                        {CATEGORIES.map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}
+                        {CATEGORIES.map((v) => (
+                          <MenuItem key={v} value={v}>
+                            {v}
+                          </MenuItem>
+                        ))}
                       </TextField>
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Controller
-                    name="deviceType"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField {...field} label="Device type" select fullWidth sx={textFieldStyle}>
-                        {DEVICE_TYPES.map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}
-                      </TextField>
-                    )}
-                  />
-                </Grid>
+
                 <Grid item xs={12} sm={6}>
                   <Controller
                     name="condition"
                     control={control}
                     render={({ field }) => (
                       <TextField {...field} label="Condition" select fullWidth sx={textFieldStyle}>
-                        {CONDITIONS.map((v) => <MenuItem key={v} value={v}>{v.replace("_"," ")}</MenuItem>)}
+                        {CONDITIONS.map((v) => (
+                          <MenuItem key={v} value={v}>
+                            {v.replace("_", " ")}
+                          </MenuItem>
+                        ))}
                       </TextField>
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+
+                <Grid item xs={12} sm={4}>
                   <Controller
                     name="brand"
                     control={control}
@@ -283,12 +346,112 @@ export default function NewListingPage() {
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+
+                <Grid item xs={12} sm={4}>
                   <Controller
                     name="model"
                     control={control}
                     render={({ field }) => (
-                      <TextField {...field} label="Model" fullWidth sx={textFieldStyle} placeholder="e.g., T14 Gen 2, CP3N-FT" />
+                      <TextField {...field} label="Model" fullWidth sx={textFieldStyle} placeholder="e.g., T14 Gen 2, CP4N" />
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={4}>
+                  <Controller
+                    name="make"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField {...field} label="Make (optional)" fullWidth sx={textFieldStyle} placeholder="Variant / submodel" />
+                    )}
+                  />
+                </Grid>
+
+                {/* techTypes multi-select */}
+                <Grid item xs={12} sm={6}>
+                  <Controller
+                    name="techTypes"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        multiple
+                        fullWidth
+                        value={field.value || []}
+                        onChange={field.onChange}
+                        input={<OutlinedInput label="Tech types" />}
+                        displayEmpty
+                        sx={textFieldStyle}
+                        renderValue={(selected) =>
+                          selected?.length ? (
+                            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                              {selected.map((v) => (
+                                <Chip key={v} label={v} size="small" />
+                              ))}
+                            </Box>
+                          ) : (
+                            <Typography sx={{ color: "rgba(255,255,255,0.65)" }}>Tech types</Typography>
+                          )
+                        }
+                      >
+                        {TECH_TYPES.map((v) => (
+                          <MenuItem key={v} value={v}>
+                            {v}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    )}
+                  />
+                </Grid>
+
+                {/* deviceTypes multi-select */}
+                <Grid item xs={12} sm={6}>
+                  <Controller
+                    name="deviceTypes"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        multiple
+                        fullWidth
+                        value={field.value || []}
+                        onChange={field.onChange}
+                        input={<OutlinedInput label="Device types" />}
+                        displayEmpty
+                        sx={textFieldStyle}
+                        renderValue={(selected) =>
+                          selected?.length ? (
+                            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                              {selected.map((v) => (
+                                <Chip key={v} label={v} size="small" />
+                              ))}
+                            </Box>
+                          ) : (
+                            <Typography sx={{ color: "rgba(255,255,255,0.65)" }}>Device types</Typography>
+                          )
+                        }
+                      >
+                        {DEVICE_TYPES.map((v) => (
+                          <MenuItem key={v} value={v}>
+                            {v}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    )}
+                  />
+                </Grid>
+
+                {/* status */}
+                <Grid item xs={12} sm={6}>
+                  <Controller
+                    name="status"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField {...field} label="Status" select fullWidth sx={textFieldStyle}>
+                        {["ACTIVE", "HIDDEN", "SOLD"].map((v) => (
+                          <MenuItem key={v} value={v}>
+                            {v}
+                          </MenuItem>
+                        ))}
+                      </TextField>
                     )}
                   />
                 </Grid>
@@ -296,35 +459,38 @@ export default function NewListingPage() {
 
               <Divider sx={{ my: 2, borderColor: "rgba(255,255,255,0.08)" }} />
 
-              <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>Identifiers (optional)</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 1, color: "white" }}>
+                Identifiers (optional)
+              </Typography>
+
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Controller
-                    name="sku"
+                    name="serialnumber"
                     control={control}
-                    render={({ field }) => (
-                      <TextField {...field} label="SKU" fullWidth sx={textFieldStyle} />
-                    )}
+                    render={({ field }) => <TextField {...field} label="Serial number" fullWidth sx={textFieldStyle} />}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Controller
-                    name="serial"
+                    name="macaddress"
                     control={control}
-                    render={({ field }) => (
-                      <TextField {...field} label="Serial #" fullWidth sx={textFieldStyle} />
-                    )}
+                    render={({ field }) => <TextField {...field} label="MAC address" fullWidth sx={textFieldStyle} />}
                   />
                 </Grid>
               </Grid>
             </Paper>
 
+            {/* Photos */}
             <Paper elevation={0} sx={{ ...quietCard, mt: 2, p: { xs: 2, md: 3 } }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>Photos</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 1, color: "white" }}>
+                Photos (required)
+              </Typography>
+
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-start">
                 <Button
                   variant="outlined"
-                  startIcon={<AddPhotoAlternateIcon />}
+                  startIcon={<AddPhotoAlternateIcon sx={{ color: "white" }} />}
                   component="label"
                   sx={{ borderColor: "rgba(255,255,255,0.28)", color: "rgba(255,255,255,0.9)" }}
                 >
@@ -344,7 +510,7 @@ export default function NewListingPage() {
                         position: "relative",
                         borderRadius: 2,
                         overflow: "hidden",
-                        border: "1px solid rgba(255,255,255,0.08)"
+                        border: "1px solid rgba(255,255,255,0.08)",
                       }}
                     >
                       <Box
@@ -357,7 +523,13 @@ export default function NewListingPage() {
                         <IconButton
                           size="small"
                           onClick={() => removeImageAt(idx)}
-                          sx={{ position: "absolute", top: 6, right: 6, bgcolor: "rgba(0,0,0,0.45)" }}
+                          sx={{
+                            position: "absolute",
+                            top: 6,
+                            right: 6,
+                            bgcolor: "rgba(0,0,0,0.45)",
+                            color: "white",
+                          }}
                         >
                           <DeleteOutlineIcon fontSize="small" />
                         </IconButton>
@@ -367,16 +539,19 @@ export default function NewListingPage() {
                 ))}
               </Grid>
             </Paper>
-          </Grid>
-
-          {/* RIGHT: Pricing, fulfillment */}
+          </Grid> 
+                  {console.log(watch())}
+          {/* RIGHT */}
           <Grid item xs={12} md={4}>
             <Paper elevation={0} sx={{ ...quietCard, p: { xs: 2, md: 3 } }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>Price & Quantity</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 1, color: "white" }}>
+                Price
+              </Typography>
+
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <Controller
-                    name="price"
+                    name="rescuePrice"
                     control={control}
                     rules={{ required: "Price is required" }}
                     render={({ field }) => (
@@ -385,31 +560,16 @@ export default function NewListingPage() {
                         label="Rescue price"
                         fullWidth
                         sx={textFieldStyle}
-                        error={Boolean(errors.price)}
-                        helperText={errors.price?.message}
+                        error={Boolean(errors.rescuePrice)}
+                        helperText={errors.rescuePrice?.message}
                         InputProps={{
-                          startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                          inputMode: "decimal"
+                          startAdornment: (
+                            <InputAdornment position="start" sx={{ color: "white" }}>
+                              $
+                            </InputAdornment>
+                          ),
+                          inputMode: "decimal",
                         }}
-                      />
-                    )}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Controller
-                    name="quantity"
-                    control={control}
-                    rules={{ min: { value: 1, message: "Min 1" } }}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Quantity"
-                        fullWidth
-                        sx={textFieldStyle}
-                        type="number"
-                        inputProps={{ min: 1 }}
-                        error={Boolean(errors.quantity)}
-                        helperText={errors.quantity?.message}
                       />
                     )}
                   />
@@ -419,20 +579,13 @@ export default function NewListingPage() {
 
             <Paper elevation={0} sx={{ ...quietCard, mt: 2, p: { xs: 2, md: 3 } }}>
               <Stack direction="row" alignItems="center" spacing={1}>
-                <LocalShippingIcon />
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>Fulfillment</Typography>
+                <LocationOnIcon sx={{ color: "white" }} />
+                <Typography variant="h6" sx={{ fontWeight: 800, color: "white" }}>
+                  Pickup
+                </Typography>
               </Stack>
-              <Stack sx={{ mt: 1 }}>
-                <FormControlLabel
-                  control={
-                    <Controller
-                      name="shippingEnabled"
-                      control={control}
-                      render={({ field }) => <Switch {...field} checked={field.value} />}
-                    />
-                  }
-                  label="Shipping enabled"
-                />
+
+              <Stack sx={{ mt: 1, color: "white" }}>
                 <FormControlLabel
                   control={
                     <Controller
@@ -441,32 +594,27 @@ export default function NewListingPage() {
                       render={({ field }) => <Switch {...field} checked={field.value} />}
                     />
                   }
-                  label="Local pickup enabled"
+                  label="Pickup enabled"
                 />
               </Stack>
 
               {pickupEnabled && (
                 <>
                   <Divider sx={{ my: 2, borderColor: "rgba(255,255,255,0.08)" }} />
-                  <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-                    <LocationOnIcon />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Pickup location</Typography>
-                  </Stack>
                   <Stack spacing={1.25}>
                     <Controller
-                      name="pickupAddress1"
+                      name="pickupStreet"
                       control={control}
-                      rules={{ required: "Address line 1 is required" }}
+                      rules={{ required: "Street is required" }}
                       render={({ field }) => (
-                        <TextField {...field} label="Address line 1" fullWidth sx={textFieldStyle}
-                          error={Boolean(errors.pickupAddress1)} helperText={errors.pickupAddress1?.message} />
-                      )}
-                    />
-                    <Controller
-                      name="pickupAddress2"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField {...field} label="Address line 2" fullWidth sx={textFieldStyle} />
+                        <TextField
+                          {...field}
+                          label="Street"
+                          fullWidth
+                          sx={textFieldStyle}
+                          error={Boolean(errors.pickupStreet)}
+                          helperText={errors.pickupStreet?.message}
+                        />
                       )}
                     />
                     <Controller
@@ -474,8 +622,14 @@ export default function NewListingPage() {
                       control={control}
                       rules={{ required: "City is required" }}
                       render={({ field }) => (
-                        <TextField {...field} label="City" fullWidth sx={textFieldStyle}
-                          error={Boolean(errors.pickupCity)} helperText={errors.pickupCity?.message} />
+                        <TextField
+                          {...field}
+                          label="City"
+                          fullWidth
+                          sx={textFieldStyle}
+                          error={Boolean(errors.pickupCity)}
+                          helperText={errors.pickupCity?.message}
+                        />
                       )}
                     />
                     <Controller
@@ -483,8 +637,14 @@ export default function NewListingPage() {
                       control={control}
                       rules={{ required: "State is required" }}
                       render={({ field }) => (
-                        <TextField {...field} label="State" fullWidth sx={textFieldStyle}
-                          error={Boolean(errors.pickupState)} helperText={errors.pickupState?.message} />
+                        <TextField
+                          {...field}
+                          label="State"
+                          fullWidth
+                          sx={textFieldStyle}
+                          error={Boolean(errors.pickupState)}
+                          helperText={errors.pickupState?.message}
+                        />
                       )}
                     />
                     <Controller
@@ -492,8 +652,14 @@ export default function NewListingPage() {
                       control={control}
                       rules={{ required: "ZIP is required" }}
                       render={({ field }) => (
-                        <TextField {...field} label="ZIP" fullWidth sx={textFieldStyle}
-                          error={Boolean(errors.pickupZip)} helperText={errors.pickupZip?.message} />
+                        <TextField
+                          {...field}
+                          label="ZIP"
+                          fullWidth
+                          sx={textFieldStyle}
+                          error={Boolean(errors.pickupZip)}
+                          helperText={errors.pickupZip?.message}
+                        />
                       )}
                     />
                   </Stack>
@@ -503,30 +669,20 @@ export default function NewListingPage() {
 
             <Paper elevation={0} sx={{ ...quietCard, mt: 2, p: { xs: 2, md: 3 } }}>
               <Stack direction="row" alignItems="center" spacing={1}>
-                <VerifiedIcon />
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>Grading notes</Typography>
+                <VerifiedIcon sx={{ color: "white" }} />
+                <Typography variant="h6" sx={{ fontWeight: 800, color: "white" }}>
+                  Notes
+                </Typography>
               </Stack>
-              <Controller
-                name="gradeNotes"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Grading notes (scratches, cycles, repairs, etc.)"
-                    fullWidth
-                    multiline
-                    minRows={3}
-                    sx={{ mt: 1, ...textFieldStyle }}
-                  />
-                )}
-              />
+              <Typography sx={{ mt: 1, color: "rgba(230,238,247,0.72)" }}>
+                Add any repair/testing info inside the Description field.
+              </Typography>
             </Paper>
 
             <Stack direction="row" spacing={1.5} sx={{ mt: 2 }}>
               <Button
                 variant="outlined"
                 onClick={handleSubmit((vals) => {
-                  // Save draft locally
                   localStorage.setItem("retech_new_listing_draft", JSON.stringify(vals));
                   setToast({ open: true, type: "success", msg: "Draft saved locally." });
                 })}
@@ -534,11 +690,17 @@ export default function NewListingPage() {
               >
                 Save draft
               </Button>
+
               <Button
                 variant="contained"
                 onClick={handleSubmit(onSubmit)}
                 disabled={isSubmitting}
-                sx={{ bgcolor: "#e6eef7", color: "#0b0f14", fontWeight: 800, "&:hover": { bgcolor: "#cfe0f4" } }}
+                sx={{
+                  bgcolor: "#e6eef7",
+                  color: "#0b0f14",
+                  fontWeight: 800,
+                  "&:hover": { bgcolor: "#cfe0f4" },
+                }}
               >
                 {isSubmitting ? "Publishing…" : "Publish"}
               </Button>

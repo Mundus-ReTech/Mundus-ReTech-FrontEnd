@@ -1,7 +1,22 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Box, Container, Grid, Typography, Stack, Card, CardContent, Button, Divider,
-  Chip, IconButton, Tooltip, LinearProgress, Avatar, Menu, MenuItem, TextField
+  Box,
+  Container,
+  Grid,
+  Typography,
+  Stack,
+  Card,
+  CardContent,
+  Button,
+  Divider,
+  Chip,
+  IconButton,
+  Tooltip,
+  LinearProgress,
+  Avatar,
+  Menu,
+  MenuItem,
+  TextField,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -18,6 +33,23 @@ import api from "../lib/http";
 import UploadCsvDialog from "../components/UploadCsvDialog";
 import KpiCard from "../components/KpiCard";
 
+/** ✅ adjust to match your backend */
+const DASHBOARD_URL = "http://localhost:8080/v1/user"; // GET `${DASHBOARD_URL}/${userId}`
+
+function getStoredUser() {
+  try {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function getUserIdFromStorage() {
+  const user = getStoredUser();
+  return user?._id || user?.id || user?.userId || "";
+}
+
 export default function SmallBusinessDashboard() {
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState(null);
@@ -27,6 +59,7 @@ export default function SmallBusinessDashboard() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [csvOpen, setCsvOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [err, setErr] = useState("");
 
   const menuOpen = Boolean(anchorEl);
 
@@ -41,46 +74,113 @@ export default function SmallBusinessDashboard() {
     );
   }, [inventory, search]);
 
+  const computeMetrics = (inv = [], ord = []) => {
+    const gross = ord.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
+    const activeListings = inv.filter((i) => (i.status || "ACTIVE") === "ACTIVE").length;
+
+    const shippedOrders = ord.filter((o) =>
+      String(o.status || "").toUpperCase().includes("SHIPPED")
+    ).length;
+
+    const avg = inv.length
+      ? Math.round(
+          (inv.reduce((s, i) => s + (Number(i.rescuePrice ?? i.price) || 0), 0) /
+            inv.length) *
+            100
+        ) / 100
+      : 0;
+
+    return {
+      mrr: gross,
+      pendingListings: activeListings,
+      shippedOrders,
+      avgPrice: avg,
+      complianceScore: 92,
+    };
+  };
+
+  const fetchDashboard = async () => {
+    const userId = getUserIdFromStorage();
+    if (!userId) {
+      // ✅ don't silently return undefined; force the error so you see it
+      throw new Error(
+        "Missing user id. Ensure login sets localStorage.setItem('user', JSON.stringify(user))."
+      );
+    }
+
+    const dashRes = await api.get(`${DASHBOARD_URL}/${encodeURIComponent(userId)}`);
+    console.log("DASHBOARD RAW:", dashRes.data); // ✅ keep this while debugging
+    return dashRes.data;
+  };
+
   useEffect(() => {
     let mounted = true;
+
     (async () => {
       try {
         setLoading(true);
+        setErr("");
 
-        // 1) Metrics – replace with your own endpoints as needed
-        const [listingsRes, ordersRes, payoutsRes] = await Promise.all([
-          api.get("/listings", { params: { limit: 6, status: "ACTIVE" } }),
-          api.get("/orders", { params: { limit: 5 } }).catch(() => ({ data: { items: [] } })), // placeholder
-          api.get("/payouts", { params: { limit: 5 } }).catch(() => ({ data: { items: [] } })),
-        ]);
-
-        const items = listingsRes.data.items || [];
-        const orders = ordersRes.data.items || [];
-        const payouts = payoutsRes.data.items || [];
-
-        // Example derived metrics (tailor to your data)
-        const gross = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-        const pending = items.filter((i) => i.status === "ACTIVE").length;
-        const shipped = orders.filter((o) => o.status === "SHIPPED").length;
-        const avg = items.length
-          ? Math.round((items.reduce((s, i) => s + (i.rescuePrice || 0), 0) / items.length) * 100) / 100
-          : 0;
-
+        const dash = await fetchDashboard();
         if (!mounted) return;
-        setInventory(items);
-        setOrders(orders);
-        setPayouts(payouts);
-        setMetrics({
-          mrr: gross, // substitute with your monthly total if you have it
-          pendingListings: pending,
-          shippedOrders: shipped,
-          avgPrice: avg,
-          complianceScore: 92, // TODO: compute from your certificate/evidence data
-        });
+
+        // ✅ Normalize possible shapes.
+        // If /v1/user/:id returns a user doc, you might not have inventory/orders here at all.
+        // We'll accept all common names.
+        const dashInventory =
+          dash?.inventory ||
+          dash?.listings ||
+          dash?.items ||
+          dash?.data?.inventory ||
+          dash?.data?.listings ||
+          dash?.data?.items ||
+          [];
+
+        const dashOrders = dash?.orders || dash?.data?.orders || [];
+        const dashPayouts = dash?.payouts || dash?.data?.payouts || [];
+
+        const inv = Array.isArray(dashInventory) ? dashInventory : [];
+        const ord = Array.isArray(dashOrders) ? dashOrders : [];
+        const pay = Array.isArray(dashPayouts) ? dashPayouts : [];
+
+        setInventory(inv);
+        setOrders(ord);
+        setPayouts(pay);
+
+        // ✅ ALWAYS set metrics:
+        // If backend provided dash.metrics use it, else compute from inv/ord.
+        const m = dash?.metrics || dash?.data?.metrics || computeMetrics(inv, ord);
+        setMetrics(m);
+
+        // ---- Optional fallback fetch if your /v1/user/:id doesn't include listings ----
+        // If you find inv is always empty, uncomment this block and point it to your real listings endpoint.
+        /*
+        if (!inv.length) {
+          const userId = getUserIdFromStorage();
+          const listingsRes = await api.get(`http://localhost:8080/v1/listings/${encodeURIComponent(userId)}`);
+          const items = listingsRes.data?.items || listingsRes.data?.listings || listingsRes.data || [];
+          const normalizedInv = Array.isArray(items) ? items : [];
+          setInventory(normalizedInv);
+          const m2 = computeMetrics(normalizedInv, ord);
+          setMetrics(dash?.metrics || m2);
+        }
+        */
+      } catch (e) {
+        console.error("Dashboard load failed:", e);
+        if (mounted) {
+          setErr(
+            e?.response?.data?.message ||
+              e?.response?.statusText ||
+              e?.message ||
+              "Failed to load dashboard."
+          );
+        }
       } finally {
         if (mounted) setLoading(false);
       }
     })();
+
     return () => {
       mounted = false;
     };
@@ -98,18 +198,26 @@ export default function SmallBusinessDashboard() {
             <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>
               Manage inventory, track orders & payouts, and keep compliance tight.
             </Typography>
+            {err && <Typography sx={{ mt: 1, color: "#ffb3b3" }}>{err}</Typography>}
           </Box>
+
           <Stack direction="row" spacing={1}>
             <Tooltip title="New listing">
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
                 href="/sell/new"
-                sx={{ bgcolor: "#e6eef7", color: "#0b0f14", fontWeight: 800, "&:hover": { bgcolor: "#cfe0f4" } }}
+                sx={{
+                  bgcolor: "#e6eef7",
+                  color: "#0b0f14",
+                  fontWeight: 800,
+                  "&:hover": { bgcolor: "#cfe0f4" },
+                }}
               >
                 New Listing
               </Button>
             </Tooltip>
+
             <Tooltip title="Bulk upload via CSV">
               <Button
                 variant="outlined"
@@ -120,11 +228,13 @@ export default function SmallBusinessDashboard() {
                 Bulk Upload
               </Button>
             </Tooltip>
+
             <Tooltip title="More">
               <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} sx={{ color: "#e6eef7" }}>
                 <MoreVertIcon />
               </IconButton>
             </Tooltip>
+
             <Menu
               anchorEl={anchorEl}
               open={menuOpen}
@@ -134,41 +244,46 @@ export default function SmallBusinessDashboard() {
               <MenuItem onClick={() => setAnchorEl(null)}>
                 <DownloadIcon fontSize="small" style={{ marginRight: 8 }} /> Export CSV
               </MenuItem>
-              <MenuItem onClick={() => setAnchorEl(null)}>
+              <MenuItem
+                onClick={() => {
+                  setAnchorEl(null);
+                  window.location.reload();
+                }}
+              >
                 <RefreshIcon fontSize="small" style={{ marginRight: 8 }} /> Refresh
               </MenuItem>
             </Menu>
           </Stack>
         </Stack>
 
-        {/* Top KPIs */}
+        {/* ✅ Top KPIs */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={3}>
             <KpiCard
               icon={<InsightsIcon />}
               label="Gross sales (30d)"
-              value={`$${(metrics?.mrr || 0).toLocaleString()}`}
+              value={loading ? "—" : `$${(metrics?.mrr || 0).toLocaleString()}`}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <KpiCard
               icon={<InventoryIcon />}
               label="Active listings"
-              value={metrics?.pendingListings ?? 0}
+              value={loading ? "—" : metrics?.pendingListings ?? 0}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <KpiCard
               icon={<LocalShippingIcon />}
               label="Shipped (30d)"
-              value={metrics?.shippedOrders ?? 0}
+              value={loading ? "—" : metrics?.shippedOrders ?? 0}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <KpiCard
               icon={<PaidIcon />}
               label="Avg listing price"
-              value={`$${metrics?.avgPrice ?? 0}`}
+              value={loading ? "—" : `$${metrics?.avgPrice ?? 0}`}
             />
           </Grid>
         </Grid>
@@ -176,7 +291,12 @@ export default function SmallBusinessDashboard() {
         {/* Compliance strip */}
         <Card elevation={0} sx={quietCard}>
           <CardContent>
-            <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center" justifyContent="space-between">
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={2}
+              alignItems="center"
+              justifyContent="space-between"
+            >
               <Stack direction="row" spacing={1.5} alignItems="center">
                 <Avatar sx={{ bgcolor: "#2a8cff22", border: "1px solid #2a8cff33", color: "#a9d4ff" }}>
                   <SecurityIcon />
@@ -202,11 +322,7 @@ export default function SmallBusinessDashboard() {
                     borderRadius: 10,
                   }}
                 />
-                <Chip
-                  icon={<VerifiedIcon />}
-                  label={`${metrics?.complianceScore || 0}%`}
-                  sx={pillStyle}
-                />
+                <Chip icon={<VerifiedIcon />} label={`${metrics?.complianceScore || 0}%`} sx={pillStyle} />
                 <Button
                   variant="outlined"
                   size="small"
@@ -220,7 +336,7 @@ export default function SmallBusinessDashboard() {
           </CardContent>
         </Card>
 
-        {/* Search & actions */}
+        {/* Search */}
         <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems="center" sx={{ mt: 3, mb: 1 }}>
           <TextField
             placeholder="Search inventory (brand / model / title)"
@@ -238,16 +354,12 @@ export default function SmallBusinessDashboard() {
           </Button>
         </Stack>
 
-        {/* Main grid: Inventory / Orders / Payouts */}
+        {/* Main grid */}
         <Grid container spacing={2}>
-          {/* Inventory */}
           <Grid item xs={12} md={7}>
             <Card elevation={0} sx={quietCard}>
               <CardContent>
-                <SectionHeader
-                  title="Inventory (recent)"
-                  action={<Button href="/inventory" size="small">Manage</Button>}
-                />
+                <SectionHeader title="Inventory (recent)" action={<Button href="/inventory" size="small">Manage</Button>} />
                 <Divider sx={divider} />
                 {loading ? (
                   <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>Loading…</Typography>
@@ -264,7 +376,6 @@ export default function SmallBusinessDashboard() {
             </Card>
           </Grid>
 
-          {/* Orders */}
           <Grid item xs={12} md={5}>
             <Card elevation={0} sx={quietCard}>
               <CardContent>
@@ -285,15 +396,12 @@ export default function SmallBusinessDashboard() {
                       right={<Typography>${o.total?.toFixed?.(2) || o.total || 0}</Typography>}
                     />
                   ))}
-                  {!orders?.length && (
-                    <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>No orders yet.</Typography>
-                  )}
+                  {!orders?.length && <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>No orders yet.</Typography>}
                 </Stack>
               </CardContent>
             </Card>
           </Grid>
 
-          {/* Payouts */}
           <Grid item xs={12}>
             <Card elevation={0} sx={quietCard}>
               <CardContent>
@@ -306,12 +414,10 @@ export default function SmallBusinessDashboard() {
                         <Typography variant="subtitle2" sx={{ color: "rgba(230,238,247,0.72)" }}>
                           {new Date(p.createdAt || Date.now()).toLocaleDateString()}
                         </Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 900, mt: 0.5 }}>${p.amount || 0}</Typography>
-                        <Chip
-                          label={p.status || "PENDING"}
-                          size="small"
-                          sx={{ ...pillStyle, mt: 1 }}
-                        />
+                        <Typography variant="h6" sx={{ fontWeight: 900, mt: 0.5 }}>
+                          ${p.amount || 0}
+                        </Typography>
+                        <Chip label={p.status || "PENDING"} size="small" sx={{ ...pillStyle, mt: 1 }} />
                       </Card>
                     </Grid>
                   ))}
@@ -327,11 +433,7 @@ export default function SmallBusinessDashboard() {
         </Grid>
       </Container>
 
-      <UploadCsvDialog
-        open={csvOpen}
-        onClose={() => setCsvOpen(false)}
-        onUploaded={() => window.location.reload()}
-      />
+      <UploadCsvDialog open={csvOpen} onClose={() => setCsvOpen(false)} onUploaded={() => window.location.reload()} />
     </Box>
   );
 }
@@ -340,7 +442,9 @@ export default function SmallBusinessDashboard() {
 function SectionHeader({ title, action }) {
   return (
     <Stack direction="row" alignItems="center" justifyContent="space-between">
-      <Typography variant="h6" sx={{ fontWeight: 800 }}>{title}</Typography>
+      <Typography variant="h6" sx={{ fontWeight: 800 }}>
+        {title}
+      </Typography>
       <Stack direction="row" spacing={1} alignItems="center">
         {action}
       </Stack>
@@ -353,7 +457,13 @@ function InventoryRow({ item }) {
     <Stack direction="row" alignItems="center" spacing={1.5}>
       <Avatar
         variant="rounded"
-        sx={{ width: 42, height: 42, bgcolor: "#2a8cff22", border: "1px solid #2a8cff33", color: "#a9d4ff" }}
+        sx={{
+          width: 42,
+          height: 42,
+          bgcolor: "#2a8cff22",
+          border: "1px solid #2a8cff33",
+          color: "#a9d4ff",
+        }}
       >
         <InventoryIcon />
       </Avatar>
@@ -365,7 +475,7 @@ function InventoryRow({ item }) {
           {item.brand} {item.model} • {item.condition}
         </Typography>
       </Box>
-      <Chip label={`$${item.rescuePrice}`} size="small" sx={pillStyle} />
+      <Chip label={`$${item.rescuePrice ?? item.price ?? 0}`} size="small" sx={pillStyle} />
       <Chip label={item.status || "ACTIVE"} size="small" sx={pillStyle} />
       <Button size="small" href={`/listing/${item.id || item._id}`} sx={{ color: "#a9d4ff" }}>
         View
@@ -386,6 +496,7 @@ function RowTwoCol({ left, right }) {
 /* ——— Styles ——— */
 const quietCard = {
   bgcolor: "rgba(255,255,255,0.02)",
+  color: "white",
   border: "1px solid rgba(255,255,255,0.08)",
   borderRadius: 3,
 };
@@ -393,7 +504,7 @@ const quietCard = {
 const pillStyle = {
   bgcolor: "transparent",
   border: "1px solid rgba(255,255,255,0.16)",
-  color: "rgba(255,255,255,0.88)",
+  color: "rgba(255, 255, 255, 1)",
   backdropFilter: "blur(4px)",
 };
 

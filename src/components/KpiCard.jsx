@@ -15,7 +15,7 @@ export default function KpiCard({ icon, label, value }) {
           </Avatar>
           <Stack>
             <Typography sx={{ color: "rgba(230,238,247,0.72)", fontSize: 13 }}>{label}</Typography>
-            <Typography variant="h6" sx={{ fontWeight: 900 }}>{value}</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 900, color:'white' }}>{value}</Typography>
           </Stack>
         </Stack>
       </CardContent>

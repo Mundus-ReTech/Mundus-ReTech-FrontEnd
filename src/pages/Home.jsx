@@ -10,18 +10,18 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [filters, setFilters] = useState({ q:'', zip:'', category:'', minPrice:'', maxPrice:'' })
 
-  const fetchListings = async () => {
-    setLoading(true)
-    try {
-      const { data } = await api.get('/listings', { params: { ...filters, page: 1, limit: 24 } })
-      setItems(data.items)
-      setCount(data.count)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // const fetchListings = async () => {
+  //   setLoading(true)
+  //   try {
+  //     const { data } = await api.get('/listings', { params: { ...filters, page: 1, limit: 24 } })
+  //     setItems(data.items)
+  //     setCount(data.count)
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
 
-  useEffect(() => { fetchListings() }, [])
+  // useEffect(() => { fetchListings() }, [])
 
   return (
     // <div className="container">

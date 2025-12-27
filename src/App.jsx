@@ -12,6 +12,7 @@ import Login from "./pages/LogIn";
 import SmallBusinessDashboard from "./pages/SmallBusinessDashboard";
 import EnterpriseBusinessDashboard from "./pages/EnterpriseBusinessDashboard";
 import NewListingPage from "./pages/NewListing";
+import Cart from "./pages/Cart";
 
 // TODO: import this from wherever your auth hook actually lives
 // import { useAuthUser } from "./auth/useAuthUser";
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/account" element={<AccountPage />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/cart" element={<Cart/>}/>
 
         <Route
           path="/dashboard/smb"
