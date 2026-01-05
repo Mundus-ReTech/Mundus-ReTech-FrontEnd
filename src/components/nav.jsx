@@ -98,8 +98,8 @@ export default function Navbar() {
 
   const navLinks = [
     { label: "Home", path: "/" },
-    // { label: "Categories", path: "/categories" },
-    { label: "Partners", path: "/partners" },
+    { label: "Categories", path: "/categories" },
+    // { label: "Partners", path: "/partners" },
   ];
 
   const authedLinks = [
