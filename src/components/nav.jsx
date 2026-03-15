@@ -103,13 +103,13 @@ export default function Navbar() {
   ];
 
   const authedLinks = [
-    { label: "Dashboard", path: "/dashboard/smb", variant: "outlined" },
-    { label: "Profile Settings", path: "/account", variant: "contained" },
+    // { label: "Dashboard", path: "/dashboard/smb", variant: "outlined" },
+    // { label: "Profile Settings", path: "/account", variant: "contained" },
   ];
 
   const guestLinks = [
-    { label: "Sign Up", path: "/signup", variant: "contained" },
-    { label: "Log In", path: "/login", variant: "outlined" },
+    // { label: "Sign Up", path: "/signup", variant: "contained" },
+    // { label: "Log In", path: "/login", variant: "outlined" },
   ];
 
   const activeSx = {
@@ -212,7 +212,7 @@ export default function Navbar() {
             />
 
             {/* Cart icon */}
-            <Tooltip title="Cart">
+            {/* <Tooltip title="Cart">
               <IconButton
                 component={NavLink}
                 to="/cart"
@@ -239,7 +239,7 @@ export default function Navbar() {
                   <ShoppingCartIcon />
                 </Badge>
               </IconButton>
-            </Tooltip>
+            </Tooltip> */}
 
             {rightLinks.map((link) => (
               <Button

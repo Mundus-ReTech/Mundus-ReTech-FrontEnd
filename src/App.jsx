@@ -1,4 +1,4 @@
-import React from "react";
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/nav";
 import Home from "./pages/Home";
@@ -12,7 +12,10 @@ import Login from "./pages/LogIn";
 import SmallBusinessDashboard from "./pages/SmallBusinessDashboard";
 import EnterpriseBusinessDashboard from "./pages/EnterpriseBusinessDashboard";
 import NewListingPage from "./pages/NewListing";
+import CheckoutForm from './pages/CheckoutForm';
 import Cart from "./pages/Cart";
+import Return from "./pages/Return";
+
 
 // TODO: import this from wherever your auth hook actually lives
 // import { useAuthUser } from "./auth/useAuthUser";
@@ -26,6 +29,8 @@ export default function App() {
 
     return children;
   }
+
+
 
   return (
     <div>
@@ -65,10 +70,17 @@ export default function App() {
         />
 
         <Route path="/sell/new" element={<NewListingPage />} />
+        <Route path="/checkout" element={<CheckoutForm />}/>
+          <Route path="/return" element={<Return />} />
 
         {/* Optional: fallback */}
+
+        
         <Route path="*" element={<Navigate to="/" replace />} />
+
       </Routes>
+
+      
     </div>
   );
 }
