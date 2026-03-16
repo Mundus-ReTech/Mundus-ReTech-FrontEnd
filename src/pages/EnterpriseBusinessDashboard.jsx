@@ -24,6 +24,7 @@ import {
   ListItemIcon,
   ListItemText,
   Badge,
+  alpha,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -43,11 +44,20 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 
+const brand = {
+  white: "#FFFFFF",
+  navy: "#1E3A5F",
+  green: "#2E7D32",
+  grayBg: "#F5F7FA",
+  text: "#1A1A1A",
+  muted: "#5F6B7A",
+  border: "#D9E1EA",
+};
+
 export default function EnterpriseBusinessDashboard() {
   const [apiKeyVisible, setApiKeyVisible] = useState(false);
   const apiKey = "rt_live_******************_9VQX";
 
-  // MOCK DATA (swap with real API calls)
   const kpis = useMemo(
     () => ({
       gmv: 128450.32,
@@ -105,7 +115,7 @@ export default function EnterpriseBusinessDashboard() {
     () => [
       { type: "compliance", text: "3 batches need wipe attestation uploads", severity: "warning" },
       { type: "shipping", text: "7 orders awaiting pickup window confirmation", severity: "info" },
-      { type: "inventory", text: "Low stock: Latitude 5420 (<= 10 units remaining)", severity: "info" },
+      { type: "inventory", text: "Low stock: Latitude 5420 (10 units or fewer remaining)", severity: "info" },
     ],
     []
   );
@@ -114,7 +124,7 @@ export default function EnterpriseBusinessDashboard() {
     () => [
       { label: "Connect payout bank account", done: true },
       { label: "Upload first CSV of inventory", done: true },
-      { label: "Configure API key & webhook", done: false },
+      { label: "Configure API key and webhook", done: false },
       { label: "Add data wipe policy attestation", done: false },
     ],
     []
@@ -123,10 +133,17 @@ export default function EnterpriseBusinessDashboard() {
   return (
     <Box
       sx={{
-        bgcolor: "linear-gradient(180deg, #0b0f14 0%, #0d1118 100%)",
-        color: "#e6eef7",
         minHeight: "100vh",
-        py: { xs: 3, md: 4 },
+        bgcolor: brand.grayBg,
+        color: brand.text,
+        py: { xs: 4, md: 6 },
+        background: `radial-gradient(circle at top right, ${alpha(
+          brand.green,
+          0.06
+        )} 0%, transparent 22%), radial-gradient(circle at left top, ${alpha(
+          brand.navy,
+          0.05
+        )} 0%, transparent 28%), ${brand.grayBg}`,
       }}
     >
       <Container
@@ -134,57 +151,80 @@ export default function EnterpriseBusinessDashboard() {
         disableGutters
         sx={{ px: { xs: 2, sm: 3, md: 4 }, width: "100%", maxWidth: "100%" }}
       >
-        {/* Header */}
         <Stack
           direction={{ xs: "column", md: "row" }}
           alignItems={{ xs: "flex-start", md: "center" }}
           justifyContent="space-between"
-          sx={{ mb: 2 }}
+          spacing={2}
+          sx={{ mb: 2.5 }}
         >
-          <Stack spacing={0.3}>
-            <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: "-0.01em" }}>
+          <Box>
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 1,
+                px: 1.5,
+                py: 0.75,
+                borderRadius: 999,
+                bgcolor: alpha(brand.green, 0.08),
+                border: `1px solid ${alpha(brand.green, 0.18)}`,
+                color: brand.green,
+                mb: 2,
+              }}
+            >
+              <VerifiedIcon sx={{ fontSize: 18 }} />
+              <Typography sx={eyebrowSx}>Enterprise operations</Typography>
+            </Box>
+
+            <Typography
+              sx={{
+                fontFamily: '"vvyPreston Display", serif',
+                fontSize: { xs: 34, md: 50 },
+                lineHeight: 1.05,
+                color: brand.navy,
+              }}
+            >
               Enterprise Dashboard
             </Typography>
-            <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>
+            <Typography sx={subTextSx}>
               Overview of sales, inventory, compliance, and payouts.
             </Typography>
-          </Stack>
-          <Stack direction="row" spacing={1}>
+          </Box>
+
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <Chip label="Enterprise" sx={chipTone} icon={<VerifiedIcon />} />
             <Chip label="High-Volume Tier" sx={chipTone} />
-            <Button variant="contained" startIcon={<UploadFileIcon />} sx={primaryBtn} href="/partners/post?type=enterprise">
+            <Button
+              variant="contained"
+              startIcon={<UploadFileIcon />}
+              sx={primaryBtn}
+              href="/partners/post?type=enterprise"
+            >
               Post Inventory
             </Button>
           </Stack>
         </Stack>
 
-        {/*
-          Masonry Grid Container:
-          - auto-fill as many columns as will fit
-          - min card width 320px (adjust to taste)
-          - gap handles the spacing
-        */}
         <Box
           sx={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-            gap: 16,
+            gap: 2,
             alignItems: "stretch",
             width: "100%",
           }}
         >
-          {/* KPI cards — individual items, compact height */}
-          <KpiCard title="GMV (30d)" value={`$${kpis.gmv.toLocaleString()}`} hint="+12% vs prev." />
-          <KpiCard title="Orders (30d)" value={kpis.orders} hint="+6% vs prev." />
-          <KpiCard title="Sell-through" value={`${kpis.sellThrough}%`} hint="Target ≥ 70%" />
+          <KpiCard title="GMV (30d)" value={`$${kpis.gmv.toLocaleString()}`} hint="+12% vs previous period" />
+          <KpiCard title="Orders (30d)" value={kpis.orders} hint="+6% vs previous period" />
+          <KpiCard title="Sell-through" value={`${kpis.sellThrough}%`} hint="Target 70% or higher" />
           <KpiCard
             title="Pending payouts"
             value={`$${kpis.pendingPayouts.toLocaleString()}`}
-            hint={`Next: ${kpis.nextPayoutDate}`}
+            hint={`Next payout: ${kpis.nextPayoutDate}`}
             icon={<CalendarMonthIcon />}
           />
 
-          {/* Alerts */}
           <Card sx={card}>
             <CardHeader title={<Header title="Operational alerts" icon={<WarningAmberIcon />} />} sx={cardHdr} />
             <CardContent sx={{ pt: 0 }}>
@@ -196,7 +236,6 @@ export default function EnterpriseBusinessDashboard() {
             </CardContent>
           </Card>
 
-          {/* Checklist */}
           <Card sx={card}>
             <CardHeader title={<Header title="Onboarding checklist" icon={<DoneAllIcon />} />} sx={cardHdr} />
             <CardContent sx={{ pt: 0 }}>
@@ -204,11 +243,13 @@ export default function EnterpriseBusinessDashboard() {
                 {checklist.map((c, i) => (
                   <ListItem key={i} sx={{ px: 0 }}>
                     <ListItemIcon>
-                      <Avatar sx={miniIcon}>{c.done ? <CheckCircleIcon fontSize="small" /> : <WarningAmberIcon fontSize="small" />}</Avatar>
+                      <Avatar sx={miniIcon}>
+                        {c.done ? <CheckCircleIcon fontSize="small" /> : <WarningAmberIcon fontSize="small" />}
+                      </Avatar>
                     </ListItemIcon>
                     <ListItemText
                       primary={
-                        <Typography sx={{ color: c.done ? "rgba(230,238,247,0.8)" : "rgba(255,200,120,0.9)" }}>
+                        <Typography sx={{ color: c.done ? brand.text : "#B54708", fontFamily: '"Semplicita Pro", sans-serif' }}>
                           {c.label}
                         </Typography>
                       }
@@ -219,48 +260,45 @@ export default function EnterpriseBusinessDashboard() {
             </CardContent>
           </Card>
 
-          {/* Inventory (span 2 on md+) */}
-          <Card
-            sx={{
-              ...card,
-              gridColumn: { xs: "span 1", md: "span 2" },
-            }}
-          >
+          <Card sx={{ ...card, gridColumn: { xs: "span 1", md: "span 2" } }}>
             <CardHeader title={<Header title="Inventory overview" icon={<InventoryIcon />} />} sx={cardHdr} />
             <CardContent sx={{ pt: 0 }}>
-              <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>
+              <Typography sx={subTextSx}>
                 {inventorySummary.totalSkus} SKUs • {inventorySummary.totalUnits} Units
               </Typography>
+
               <Divider sx={divider} />
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                By category
-              </Typography>
+
+              <Typography sx={sectionLabelSx}>By category</Typography>
               <Stack spacing={1} sx={{ mb: 2 }}>
                 {inventorySummary.categories.map((c) => (
                   <Stack key={c.name} direction="row" spacing={1} alignItems="center">
-                    <Badge variant="dot" sx={{ "& .MuiBadge-badge": { bgcolor: "rgba(42,140,255,0.8)" } }}>
+                    <Badge variant="dot" sx={{ "& .MuiBadge-badge": { bgcolor: brand.navy } }}>
                       <Box sx={{ width: 0, height: 0 }} />
                     </Badge>
-                    <Typography sx={{ flex: 1 }}>{c.name}</Typography>
-                    <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>{c.units} units</Typography>
+                    <Typography sx={{ flex: 1, fontFamily: '"Semplicita Pro", sans-serif' }}>
+                      {c.name}
+                    </Typography>
+                    <Typography sx={subTextSx}>{c.units} units</Typography>
                   </Stack>
                 ))}
               </Stack>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Condition mix
-              </Typography>
+
+              <Typography sx={sectionLabelSx}>Condition mix</Typography>
               <Stack spacing={1}>
                 {inventorySummary.conditions.map((g) => (
                   <Stack key={g.grade} spacing={0.5}>
-                    <Typography sx={{ fontSize: 12 }}>{g.grade}</Typography>
+                    <Typography sx={{ fontSize: 12, color: brand.text, fontFamily: '"Semplicita Pro", sans-serif' }}>
+                      {g.grade}
+                    </Typography>
                     <LinearProgress
                       variant="determinate"
                       value={g.pct}
                       sx={{
                         height: 8,
-                        borderRadius: 6,
-                        "& .MuiLinearProgress-bar": { backgroundColor: "rgba(42,255,155,0.7)" },
-                        backgroundColor: "rgba(255,255,255,0.06)",
+                        borderRadius: 999,
+                        backgroundColor: alpha(brand.navy, 0.08),
+                        "& .MuiLinearProgress-bar": { backgroundColor: brand.green },
                       }}
                     />
                   </Stack>
@@ -269,7 +307,6 @@ export default function EnterpriseBusinessDashboard() {
             </CardContent>
           </Card>
 
-          {/* Compliance */}
           <Card sx={card}>
             <CardHeader title={<Header title="Compliance center" icon={<ShieldIcon />} />} sx={cardHdr} />
             <CardContent sx={{ pt: 0 }}>
@@ -287,7 +324,6 @@ export default function EnterpriseBusinessDashboard() {
             </CardActions>
           </Card>
 
-          {/* Orders (span 2 on md+) */}
           <Card sx={{ ...card, gridColumn: { xs: "span 1", md: "span 2" } }}>
             <CardHeader title={<Header title="Recent orders" icon={<ReceiptLongIcon />} />} sx={cardHdr} />
             <CardContent sx={{ pt: 0 }}>
@@ -304,7 +340,7 @@ export default function EnterpriseBusinessDashboard() {
               />
             </CardContent>
             <CardActions sx={{ p: 2 }}>
-              <Button variant="text" sx={ghostBtn} href="/orders">
+              <Button variant="text" sx={linkBtn} href="/orders">
                 View all orders
               </Button>
               <Button variant="contained" sx={primaryBtn} href="/shipping">
@@ -313,7 +349,6 @@ export default function EnterpriseBusinessDashboard() {
             </CardActions>
           </Card>
 
-          {/* Payouts */}
           <Card sx={card}>
             <CardHeader title={<Header title="Payouts" icon={<PaymentsIcon />} />} sx={cardHdr} />
             <CardContent sx={{ pt: 0 }}>
@@ -334,7 +369,6 @@ export default function EnterpriseBusinessDashboard() {
             </CardActions>
           </Card>
 
-          {/* Bulk tools (span 2 on md+) */}
           <Card sx={{ ...card, gridColumn: { xs: "span 1", md: "span 2" } }}>
             <CardHeader title={<Header title="Bulk tools & integrations" icon={<AssessmentIcon />} />} sx={cardHdr} />
             <CardContent sx={{ pt: 0 }}>
@@ -351,8 +385,12 @@ export default function EnterpriseBusinessDashboard() {
                 <Divider sx={divider} />
 
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems="center">
-                  <Avatar sx={miniIcon}><KeyIcon fontSize="small" /></Avatar>
-                  <Typography sx={{ flex: 1 }}>API Key</Typography>
+                  <Avatar sx={miniIcon}>
+                    <KeyIcon fontSize="small" />
+                  </Avatar>
+                  <Typography sx={{ flex: 1, fontFamily: '"Semplicita Pro", sans-serif' }}>
+                    API Key
+                  </Typography>
                   <TextField
                     size="small"
                     value={apiKeyVisible ? "rt_live_1234567890abcdef_9VQX" : apiKey}
@@ -370,24 +408,30 @@ export default function EnterpriseBusinessDashboard() {
                 </Stack>
 
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems="center">
-                  <Avatar sx={miniIcon}><HttpIcon fontSize="small" /></Avatar>
-                  <Typography sx={{ flex: 1 }}>Webhook URL</Typography>
+                  <Avatar sx={miniIcon}>
+                    <HttpIcon fontSize="small" />
+                  </Avatar>
+                  <Typography sx={{ flex: 1, fontFamily: '"Semplicita Pro", sans-serif' }}>
+                    Webhook URL
+                  </Typography>
                   <TextField
                     size="small"
                     placeholder="https://yourdomain.com/webhooks/retech"
                     InputProps={{ sx: textField }}
                     sx={{ width: { xs: "100%", sm: 360 } }}
                   />
-                  <Button variant="outlined" sx={ghostBtn}>Save</Button>
+                  <Button variant="outlined" sx={ghostBtn}>
+                    Save
+                  </Button>
                 </Stack>
-                <Typography sx={{ color: "rgba(230,238,247,0.7)", fontSize: 12 }}>
-                    Webhooks: order.created, order.updated, payout.created, listing.published, compliance.updated
+
+                <Typography sx={{ ...subTextSx, fontSize: 12 }}>
+                  Supported webhooks: order.created, order.updated, payout.created, listing.published, compliance.updated
                 </Typography>
               </Stack>
             </CardContent>
           </Card>
 
-          {/* Team */}
           <Card sx={card}>
             <CardHeader title={<Header title="Team & permissions" icon={<GroupIcon />} />} sx={cardHdr} />
             <CardContent sx={{ pt: 0 }}>
@@ -398,12 +442,20 @@ export default function EnterpriseBusinessDashboard() {
                   { name: "Sam Chen", role: "Finance" },
                 ].map((u) => (
                   <Stack key={u.name} direction="row" spacing={1} alignItems="center">
-                    <Avatar sx={{ width: 28, height: 28, bgcolor: "rgba(255,255,255,0.08)" }}>
-                      {u.name.split(" ").map((p) => p[0]).join("").slice(0, 2)}
+                    <Avatar sx={{ width: 28, height: 28, bgcolor: alpha(brand.navy, 0.08), color: brand.navy }}>
+                      {u.name
+                        .split(" ")
+                        .map((p) => p[0])
+                        .join("")
+                        .slice(0, 2)}
                     </Avatar>
-                    <Typography sx={{ flex: 1 }}>{u.name}</Typography>
+                    <Typography sx={{ flex: 1, fontFamily: '"Semplicita Pro", sans-serif' }}>
+                      {u.name}
+                    </Typography>
                     <Chip label={u.role} size="small" sx={chipTone} />
-                    <Button variant="text" sx={ghostBtn}>Manage</Button>
+                    <Button variant="text" sx={linkBtn}>
+                      Manage
+                    </Button>
                   </Stack>
                 ))}
               </Stack>
@@ -416,13 +468,17 @@ export default function EnterpriseBusinessDashboard() {
           </Card>
         </Box>
 
-        {/* Footer note */}
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="space-between" sx={{ mt: 2 }}>
-          <Typography sx={{ color: "rgba(230,238,247,0.64)" }}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={1}
+          justifyContent="space-between"
+          sx={{ mt: 2.5 }}
+        >
+          <Typography sx={{ ...subTextSx, fontSize: 14 }}>
             Need help? <Link href="/contact">Contact support</Link>
           </Typography>
-          <Typography sx={{ color: "rgba(230,238,247,0.64)" }}>
-            © {new Date().getFullYear()} Retech • Enterprise
+          <Typography sx={{ ...subTextSx, fontSize: 14 }}>
+            © {new Date().getFullYear()} ReTech • Enterprise
           </Typography>
         </Stack>
       </Container>
@@ -430,26 +486,45 @@ export default function EnterpriseBusinessDashboard() {
   );
 }
 
-/* ——— Small components ——— */
 function Header({ title, icon }) {
   return (
     <Stack direction="row" spacing={1} alignItems="center">
       <Avatar sx={miniIcon}>{icon}</Avatar>
-      <Typography variant="h6" sx={{ fontWeight: 800 }}>{title}</Typography>
+      <Typography
+        sx={{
+          fontSize: 22,
+          fontWeight: 800,
+          color: brand.navy,
+          fontFamily: '"Semplicita Pro", sans-serif',
+        }}
+      >
+        {title}
+      </Typography>
     </Stack>
   );
 }
 
 function KpiCard({ title, value, hint, icon }) {
   return (
-    <Card sx={{ ...card, minHeight: 112 }}>
+    <Card sx={{ ...card, minHeight: 120 }}>
       <CardContent sx={{ p: 2.5 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Typography sx={{ color: "rgba(230,238,247,0.72)", fontSize: 13 }}>{title}</Typography>
+          <Typography sx={{ ...subTextSx, fontSize: 13 }}>{title}</Typography>
           {icon ? <Avatar sx={miniIcon}>{icon}</Avatar> : null}
         </Stack>
-        <Typography variant="h5" sx={{ fontWeight: 900, mt: 0.5 }}>{value}</Typography>
-        {hint && <Typography sx={{ color: "rgba(230,238,247,0.64)", fontSize: 12, mt: 0.5 }}>{hint}</Typography>}
+        <Typography
+          sx={{
+            fontSize: 30,
+            lineHeight: 1.1,
+            fontWeight: 900,
+            color: brand.navy,
+            mt: 0.5,
+            fontFamily: '"Semplicita Pro", sans-serif',
+          }}
+        >
+          {value}
+        </Typography>
+        {hint ? <Typography sx={{ ...subTextSx, fontSize: 12, mt: 0.5 }}>{hint}</Typography> : null}
       </CardContent>
     </Card>
   );
@@ -457,13 +532,18 @@ function KpiCard({ title, value, hint, icon }) {
 
 function AlertItem({ severity = "info", text }) {
   const color =
-    severity === "warning" ? "rgba(255,163,42,0.9)" :
-    severity === "error" ? "rgba(255,99,99,0.95)" :
-    "rgba(230,238,247,0.92)";
+    severity === "warning"
+      ? "#B54708"
+      : severity === "error"
+      ? "#B42318"
+      : brand.text;
+
   return (
     <Stack direction="row" spacing={1} alignItems="center">
-      <Avatar sx={miniIcon}><WarningAmberIcon fontSize="small" /></Avatar>
-      <Typography sx={{ color }}>{text}</Typography>
+      <Avatar sx={miniIcon}>
+        <WarningAmberIcon fontSize="small" />
+      </Avatar>
+      <Typography sx={{ color, fontFamily: '"Semplicita Pro", sans-serif' }}>{text}</Typography>
     </Stack>
   );
 }
@@ -471,32 +551,49 @@ function AlertItem({ severity = "info", text }) {
 function ComplianceRow({ title, pending = 0, action = "Review" }) {
   return (
     <Stack direction="row" alignItems="center" spacing={1}>
-      <Avatar sx={miniIcon}><ShieldIcon fontSize="small" /></Avatar>
-      <Typography sx={{ flex: 1 }}>{title}</Typography>
+      <Avatar sx={miniIcon}>
+        <ShieldIcon fontSize="small" />
+      </Avatar>
+      <Typography sx={{ flex: 1, fontFamily: '"Semplicita Pro", sans-serif' }}>{title}</Typography>
       {pending > 0 ? (
         <Chip size="small" label={`${pending} pending`} sx={chipTone} />
       ) : (
         <Chip size="small" label="All good" sx={chipTone} icon={<CheckCircleIcon />} />
       )}
-      <Button variant="text" sx={ghostBtn}>{action}</Button>
+      <Button variant="text" sx={linkBtn}>
+        {action}
+      </Button>
     </Stack>
   );
 }
 
 function TableList({ rows, columns }) {
   return (
-    <Box sx={{ borderRadius: 2, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+    <Box
+      sx={{
+        borderRadius: 3,
+        overflow: "hidden",
+        border: `1px solid ${brand.border}`,
+      }}
+    >
       <Box
         sx={{
           display: "grid",
           gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`,
           p: 1.5,
-          bgcolor: "rgba(255,255,255,0.02)",
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          bgcolor: brand.grayBg,
+          borderBottom: `1px solid ${brand.border}`,
         }}
       >
         {columns.map((c) => (
-          <Typography key={c.key} sx={{ fontSize: 12, color: "rgba(230,238,247,0.7)" }}>
+          <Typography
+            key={c.key}
+            sx={{
+              fontSize: 12,
+              color: brand.muted,
+              fontFamily: '"Semplicita Pro", sans-serif',
+            }}
+          >
             {c.label}
           </Typography>
         ))}
@@ -510,15 +607,21 @@ function TableList({ rows, columns }) {
               display: "grid",
               gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`,
               p: 1.5,
-              borderBottom: "1px solid rgba(255,255,255,0.06)",
-              "&:hover": { backgroundColor: "rgba(255,255,255,0.03)" },
+              borderBottom: `1px solid ${alpha(brand.navy, 0.06)}`,
+              "&:hover": { backgroundColor: alpha(brand.navy, 0.02) },
             }}
           >
             {columns.map((c) => {
               const val = r[c.key];
               const out = c.render ? c.render(val, r) : val;
               return (
-                <Typography key={c.key} sx={{ color: "rgba(230,238,247,0.9)" }}>
+                <Typography
+                  key={c.key}
+                  sx={{
+                    color: brand.text,
+                    fontFamily: '"Semplicita Pro", sans-serif',
+                  }}
+                >
                   {out}
                 </Typography>
               );
@@ -530,52 +633,104 @@ function TableList({ rows, columns }) {
   );
 }
 
-/* ——— Styles ——— */
 const card = {
-  bgcolor: "rgba(255,255,255,0.025)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  color: "#e6eef7",
-  borderRadius: 2,
+  bgcolor: brand.white,
+  border: `1px solid ${brand.border}`,
+  color: brand.text,
+  borderRadius: 5,
   height: "100%",
   width: "100%",
   boxSizing: "border-box",
+  boxShadow: "0 12px 32px rgba(30, 58, 95, 0.05)",
 };
 
 const cardHdr = {
-  p: 2,
+  p: 2.5,
   "& .MuiCardHeader-title": { fontWeight: 800 },
 };
 
 const chipTone = {
-  bgcolor: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  color: "rgba(230,238,247,0.92)",
+  bgcolor: alpha(brand.navy, 0.05),
+  border: `1px solid ${alpha(brand.navy, 0.12)}`,
+  color: brand.navy,
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
 };
 
 const primaryBtn = {
-  bgcolor: "#e6eef7",
-  color: "#0b0f14",
-  fontWeight: 800,
-  "&:hover": { bgcolor: "#cfe0f4" },
+  bgcolor: brand.navy,
+  color: brand.white,
+  fontWeight: 700,
+  textTransform: "none",
+  boxShadow: "none",
+  borderRadius: 3,
+  fontFamily: '"Semplicita Pro", sans-serif',
+  "&:hover": {
+    bgcolor: "#16304F",
+    boxShadow: "none",
+  },
 };
 
 const ghostBtn = {
-  color: "rgba(255,255,255,0.9)",
-  borderColor: "rgba(255,255,255,0.18)",
-  "&:hover": { borderColor: "rgba(255,255,255,0.28)" },
+  color: brand.navy,
+  borderColor: brand.border,
+  textTransform: "none",
+  fontWeight: 700,
+  borderRadius: 3,
+  fontFamily: '"Semplicita Pro", sans-serif',
+  "&:hover": {
+    borderColor: brand.navy,
+    bgcolor: alpha(brand.navy, 0.03),
+  },
+};
+
+const linkBtn = {
+  color: brand.navy,
+  textTransform: "none",
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
+  "&:hover": {
+    bgcolor: "transparent",
+    color: brand.green,
+  },
 };
 
 const miniIcon = {
-  width: 28,
-  height: 28,
-  bgcolor: "rgba(255,255,255,0.06)",
-  color: "rgba(255,255,255,0.92)",
+  width: 30,
+  height: 30,
+  bgcolor: alpha(brand.navy, 0.08),
+  color: brand.navy,
 };
 
-const divider = { my: 1.5, borderColor: "rgba(255,255,255,0.08)" };
+const divider = {
+  my: 1.75,
+  borderColor: brand.border,
+};
 
 const textField = {
-  bgcolor: "rgba(255,255,255,0.03)",
-  color: "rgba(230,238,247,0.92)",
-  "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.12)" },
+  bgcolor: brand.white,
+  color: brand.text,
+  borderRadius: 3,
+  fontFamily: '"Semplicita Pro", sans-serif',
+  "& .MuiOutlinedInput-notchedOutline": {
+    borderColor: brand.border,
+  },
+};
+
+const eyebrowSx = {
+  fontSize: 13,
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const subTextSx = {
+  color: brand.muted,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const sectionLabelSx = {
+  mb: 1,
+  fontWeight: 700,
+  color: brand.text,
+  fontFamily: '"Semplicita Pro", sans-serif',
 };

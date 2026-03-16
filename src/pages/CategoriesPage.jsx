@@ -1,44 +1,57 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Autocomplete,
   Box,
-  Container,
-  Grid,
-  Typography,
-  Stack,
-  TextField,
-  InputAdornment,
-  Select,
-  MenuItem,
-  FormControl,
-  Chip,
-  Slider,
   Button,
   Card,
-  CardContent,
   CardActions,
-  Pagination,
+  CardContent,
+  Checkbox,
+  Chip,
+  Container,
   Divider,
   Drawer,
-  IconButton,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Checkbox,
-  FormGroup,
+  FormControl,
   FormControlLabel,
-  Autocomplete,
+  FormGroup,
+  Grid,
+  IconButton,
+  InputAdornment,
+  MenuItem,
+  Pagination,
+  Select,
+  Slider,
+  Stack,
+  TextField,
+  Typography,
+  alpha,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import VerifiedIcon from "@mui/icons-material/Verified";
+import Inventory2RoundedIcon from "@mui/icons-material/Inventory2Rounded";
+import TuneRoundedIcon from "@mui/icons-material/TuneRounded";
+import LocalShippingRoundedIcon from "@mui/icons-material/LocalShippingRounded";
+import SellRoundedIcon from "@mui/icons-material/SellRounded";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import axios from "axios";
 
-/* ---------- constants ---------- */
 const CONDITIONS = ["NEW", "LIKE_NEW", "REFURBISHED", "GOOD", "FAIR", "FOR_PARTS"];
 
-/* ---------- helpers ---------- */
+const brand = {
+  white: "#FFFFFF",
+  navy: "#1E3A5F",
+  green: "#2E7D32",
+  grayBg: "#F5F7FA",
+  text: "#1A1A1A",
+  muted: "#5F6B7A",
+  border: "#D9E1EA",
+};
+
 const norm = (v) => String(v ?? "").trim().toLowerCase();
 const toArray = (v) => (Array.isArray(v) ? v : v ? [v] : []);
 const uniqSorted = (arr) =>
@@ -55,11 +68,9 @@ const getListingId = (it) =>
   it?.macAddress ??
   "";
 
-/* ---------- page ---------- */
 export default function CategoriesPage() {
   const [params, setParams] = useSearchParams();
 
-  // top bar filters
   const [q, setQ] = useState(params.get("q") || "");
   const [category, setCategory] = useState(params.get("cat") || "");
   const [zip, setZip] = useState(params.get("zip") || "");
@@ -70,7 +81,6 @@ export default function CategoriesPage() {
   const [cond, setCond] = useState(params.getAll("cond") || []);
   const [page, setPage] = useState(Number(params.get("page") || 1));
 
-  // side filters
   const [techTypes, setTechTypes] = useState(params.getAll("tech") || []);
   const [deviceTypes, setDeviceTypes] = useState(params.getAll("dtype") || []);
   const [brands, setBrands] = useState(params.getAll("brand") || []);
@@ -79,15 +89,12 @@ export default function CategoriesPage() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // show 10 per page
   const limit = 10;
 
-  // axios data fetch
   const [allListings, setAllListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // fetch
   useEffect(() => {
     let cancelled = false;
 
@@ -122,7 +129,6 @@ export default function CategoriesPage() {
     };
   }, []);
 
-  /* ---------- dynamic filter options from data ---------- */
   const CATEGORY_OPTIONS = useMemo(() => {
     const cats = uniqSorted(allListings.map((x) => x?.category));
     return ["", ...cats];
@@ -147,7 +153,6 @@ export default function CategoriesPage() {
     return uniqSorted(all);
   }, [allListings]);
 
-  /* ---------- sync URL ---------- */
   useEffect(() => {
     const next = new URLSearchParams();
     if (q) next.set("q", q);
@@ -178,7 +183,6 @@ export default function CategoriesPage() {
     setParams,
   ]);
 
-  /* ---------- client-side filtering ---------- */
   const filtered = useMemo(() => {
     if (!Array.isArray(allListings)) return [];
 
@@ -195,9 +199,9 @@ export default function CategoriesPage() {
 
     return allListings.filter((it) => {
       const title = norm(it.title || it.name);
-      const brand = norm(it.brand);
-      const model = norm(it.model);
-      const make = norm(it.make);
+      const brandVal = norm(it.brand);
+      const modelVal = norm(it.model);
+      const makeVal = norm(it.make);
       const categoryVal = norm(it.category);
       const conditionVal = norm(it.condition);
 
@@ -211,9 +215,9 @@ export default function CategoriesPage() {
         qLower &&
         !(
           title.includes(qLower) ||
-          brand.includes(qLower) ||
-          model.includes(qLower) ||
-          make.includes(qLower)
+          brandVal.includes(qLower) ||
+          modelVal.includes(qLower) ||
+          makeVal.includes(qLower)
         )
       ) {
         return false;
@@ -233,15 +237,15 @@ export default function CategoriesPage() {
         if (!ok) return false;
       }
 
-      if (selectedBrands.length && !selectedBrands.includes(brand)) return false;
+      if (selectedBrands.length && !selectedBrands.includes(brandVal)) return false;
 
       if (selectedMakes.length) {
-        const ok = selectedMakes.some((m) => make.includes(m) || brand.includes(m));
+        const ok = selectedMakes.some((m) => makeVal.includes(m) || brandVal.includes(m));
         if (!ok) return false;
       }
 
       if (selectedModels.length) {
-        const ok = selectedModels.some((m) => model.includes(m));
+        const ok = selectedModels.some((m) => modelVal.includes(m));
         if (!ok) return false;
       }
 
@@ -251,21 +255,19 @@ export default function CategoriesPage() {
     });
   }, [allListings, q, category, zip, cond, techTypes, deviceTypes, brands, makes, models, price]);
 
-  // always snap back to page 1 if filters reduce results
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(filtered.length / limit));
     if (page > totalPages) setPage(1);
-  }, [filtered.length, limit]);
+  }, [filtered.length, limit, page]);
 
   const count = filtered.length;
   const pages = Math.max(1, Math.ceil(count / limit));
 
   const pagedItems = useMemo(
     () => filtered.slice((page - 1) * limit, page * limit),
-    [filtered, page, limit]
+    [filtered, page]
   );
 
-  /* ---------- helpers ---------- */
   const resetAll = () => {
     setQ("");
     setCategory("");
@@ -285,20 +287,37 @@ export default function CategoriesPage() {
     return list.filter(Boolean).slice(0, 8);
   }, [techTypes, deviceTypes, brands, makes, models, cond]);
 
-  /* ---------- side filter content ---------- */
   const SideFilters = (
-    <Box sx={{ width: { xs: 320, md: "100%" }, p: 2 }}>
-      <Typography variant="h6" sx={{ fontWeight: 800, mb: 1.5, color: "whitesmoke" }}>
-        Filters
-      </Typography>
+    <Box sx={{ width: { xs: 320, md: "100%" }, p: 2.25 }}>
+      <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 1.5 }}>
+        <Box
+          sx={{
+            width: 38,
+            height: 38,
+            borderRadius: 2.5,
+            bgcolor: alpha(brand.green, 0.10),
+            color: brand.green,
+            border: `1px solid ${alpha(brand.green, 0.16)}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <TuneRoundedIcon fontSize="small" />
+        </Box>
+        <Box>
+          <Typography sx={sectionTitleSx}>Filters</Typography>
+          <Typography sx={sectionSubSx}>Refine by type, condition, price, and brand.</Typography>
+        </Box>
+      </Stack>
 
-      <Accordion defaultExpanded sx={accStyle}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: "rgba(255,255,255,0.7)" }} />}>
-          <Typography sx={accTitle}>Technology type</Typography>
+      <Accordion defaultExpanded sx={accordionSx}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: brand.navy }} />}>
+          <Typography sx={accordionTitleSx}>Technology type</Typography>
         </AccordionSummary>
         <AccordionDetails>
           <FormGroup>
-            {(TECH_OPTIONS.length ? TECH_OPTIONS : []).map((t) => (
+            {TECH_OPTIONS.map((t) => (
               <FormControlLabel
                 key={t}
                 control={
@@ -311,29 +330,27 @@ export default function CategoriesPage() {
                       setTechTypes(next);
                       setPage(1);
                     }}
-                    sx={checkboxStyle}
+                    sx={checkboxSx}
                   />
                 }
                 label={t}
-                sx={labelStyle}
+                sx={filterLabelSx}
               />
             ))}
             {!TECH_OPTIONS.length && (
-              <Typography sx={{ color: "rgba(230,238,247,0.7)", fontSize: 12 }}>
-                No techTypes found in data yet.
-              </Typography>
+              <Typography sx={emptyFilterTextSx}>No tech types found yet.</Typography>
             )}
           </FormGroup>
         </AccordionDetails>
       </Accordion>
 
-      <Accordion defaultExpanded sx={accStyle}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: "rgba(255,255,255,0.7)" }} />}>
-          <Typography sx={accTitle}>Device type</Typography>
+      <Accordion defaultExpanded sx={accordionSx}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: brand.navy }} />}>
+          <Typography sx={accordionTitleSx}>Device type</Typography>
         </AccordionSummary>
         <AccordionDetails>
           <FormGroup>
-            {(DEVICE_OPTIONS.length ? DEVICE_OPTIONS : []).map((d) => (
+            {DEVICE_OPTIONS.map((d) => (
               <FormControlLabel
                 key={d}
                 control={
@@ -346,25 +363,23 @@ export default function CategoriesPage() {
                       setDeviceTypes(next);
                       setPage(1);
                     }}
-                    sx={checkboxStyle}
+                    sx={checkboxSx}
                   />
                 }
                 label={d}
-                sx={labelStyle}
+                sx={filterLabelSx}
               />
             ))}
             {!DEVICE_OPTIONS.length && (
-              <Typography sx={{ color: "rgba(230,238,247,0.7)", fontSize: 12 }}>
-                No deviceTypes found in data yet.
-              </Typography>
+              <Typography sx={emptyFilterTextSx}>No device types found yet.</Typography>
             )}
           </FormGroup>
         </AccordionDetails>
       </Accordion>
 
-      <Accordion defaultExpanded sx={accStyle}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: "rgba(255,255,255,0.7)" }} />}>
-          <Typography sx={accTitle}>Brands</Typography>
+      <Accordion defaultExpanded sx={accordionSx}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: brand.navy }} />}>
+          <Typography sx={accordionTitleSx}>Brands</Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Autocomplete
@@ -375,9 +390,12 @@ export default function CategoriesPage() {
               setBrands(v);
               setPage(1);
             }}
-            renderInput={(p) => <TextField {...p} placeholder="Add brand…" sx={textFieldStyle} />}
-            sx={{ mb: 1 }}
+            renderInput={(p) => (
+              <TextField {...p} placeholder="Add brand..." sx={inputSx} />
+            )}
+            sx={{ mb: 1.5 }}
           />
+
           <Stack direction="row" spacing={1} flexWrap="wrap">
             {BRAND_OPTIONS.slice(0, 8).map((b) => (
               <Chip
@@ -388,16 +406,16 @@ export default function CategoriesPage() {
                   setBrands([...brands, b]);
                   setPage(1);
                 }}
-                sx={pillStyle}
+                sx={filterChipSx}
               />
             ))}
           </Stack>
         </AccordionDetails>
       </Accordion>
 
-      <Accordion sx={accStyle}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: "rgba(255,255,255,0.7)" }} />}>
-          <Typography sx={accTitle}>Make & Model</Typography>
+      <Accordion sx={accordionSx}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: brand.navy }} />}>
+          <Typography sx={accordionTitleSx}>Make & Model</Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Autocomplete
@@ -409,9 +427,12 @@ export default function CategoriesPage() {
               setPage(1);
             }}
             options={[]}
-            renderInput={(p) => <TextField {...p} placeholder="Makes (free text)" sx={textFieldStyle} />}
-            sx={{ mb: 1 }}
+            renderInput={(p) => (
+              <TextField {...p} placeholder="Makes" sx={inputSx} />
+            )}
+            sx={{ mb: 1.5 }}
           />
+
           <Autocomplete
             multiple
             freeSolo
@@ -421,14 +442,16 @@ export default function CategoriesPage() {
               setPage(1);
             }}
             options={[]}
-            renderInput={(p) => <TextField {...p} placeholder="Models (free text)" sx={textFieldStyle} />}
+            renderInput={(p) => (
+              <TextField {...p} placeholder="Models" sx={inputSx} />
+            )}
           />
         </AccordionDetails>
       </Accordion>
 
-      <Accordion sx={accStyle}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: "rgba(255,255,255,0.7)" }} />}>
-          <Typography sx={accTitle}>Condition</Typography>
+      <Accordion sx={accordionSx}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: brand.navy }} />}>
+          <Typography sx={accordionTitleSx}>Condition</Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Stack direction="row" spacing={1} flexWrap="wrap">
@@ -443,7 +466,10 @@ export default function CategoriesPage() {
                     setCond(next);
                     setPage(1);
                   }}
-                  sx={{ ...pillStyle, ...(active ? pillActive : null) }}
+                  sx={{
+                    ...filterChipSx,
+                    ...(active ? activeFilterChipSx : null),
+                  }}
                 />
               );
             })}
@@ -451,30 +477,28 @@ export default function CategoriesPage() {
         </AccordionDetails>
       </Accordion>
 
-      <Accordion sx={accStyle}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: "rgba(255,255,255,0.7)" }} />}>
-          <Typography sx={accTitle}>Price</Typography>
+      <Accordion sx={accordionSx}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: brand.navy }} />}>
+          <Typography sx={accordionTitleSx}>Price</Typography>
         </AccordionSummary>
         <AccordionDetails>
-          <Stack spacing={0.5}>
-            <Typography sx={{ fontSize: 12, color: "rgba(230,238,247,0.72)" }}>
-              ${price[0]} – ${price[1]}
-            </Typography>
-            <Slider
-              value={price}
-              onChange={(_, val) => {
-                setPrice(val);
-                setPage(1);
-              }}
-              min={0}
-              max={5000}
-            />
-          </Stack>
+          <Typography sx={priceMetaSx}>
+            ${price[0]} - ${price[1]}
+          </Typography>
+          <Slider
+            value={price}
+            onChange={(_, val) => {
+              setPrice(val);
+              setPage(1);
+            }}
+            min={0}
+            max={5000}
+          />
         </AccordionDetails>
       </Accordion>
 
       <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-        <Button onClick={resetAll} size="small" sx={{ color: "rgba(255,255,255,0.88)" }}>
+        <Button onClick={resetAll} size="small" sx={linkButtonSx}>
           Reset all
         </Button>
       </Stack>
@@ -482,30 +506,79 @@ export default function CategoriesPage() {
   );
 
   return (
-    <Box sx={{ bgcolor: "#0b0f14", color: "#e6eef7", minHeight: "100vh", minWidth: "100%" }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: brand.grayBg,
+        color: brand.text,
+        background: `radial-gradient(circle at top right, ${alpha(
+          brand.green,
+          0.06
+        )} 0%, transparent 20%), radial-gradient(circle at left top, ${alpha(
+          brand.navy,
+          0.05
+        )} 0%, transparent 28%), ${brand.grayBg}`,
+      }}
+    >
       <Container maxWidth={false} disableGutters sx={{ py: { xs: 4, md: 6 }, px: { xs: 2, md: 4 } }}>
-        {/* Header */}
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ mb: 2.5 }}
+        >
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 1,
+                px: 1.5,
+                py: 0.75,
+                borderRadius: 999,
+                bgcolor: alpha(brand.green, 0.08),
+                border: `1px solid ${alpha(brand.green, 0.18)}`,
+                color: brand.green,
+                mb: 2,
+              }}
+            >
+              <Inventory2RoundedIcon sx={{ fontSize: 18 }} />
+              <Typography sx={eyebrowSx}>Marketplace inventory</Typography>
+            </Box>
+
+            <Typography
+              sx={{
+                fontFamily: '"vvyPreston Display", serif',
+                fontSize: { xs: 34, md: 48 },
+                lineHeight: 1.05,
+                color: brand.navy,
+              }}
+            >
               Browse tech
             </Typography>
-            <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>
+
+            <Typography sx={pageSubSx}>
               Filter by category, brand, type, condition, price, and ZIP.
             </Typography>
           </Box>
+
           <IconButton
             onClick={() => setDrawerOpen(true)}
-            sx={{ display: { xs: "inline-flex", md: "none" }, color: "#e6eef7" }}
+            sx={{
+              display: { xs: "inline-flex", md: "none" },
+              color: brand.navy,
+              border: `1px solid ${brand.border}`,
+              borderRadius: 3,
+              bgcolor: brand.white,
+            }}
             aria-label="Open filters"
           >
             <FilterListIcon />
           </IconButton>
         </Stack>
 
-        {/* top filter bar */}
-        <Card elevation={0} sx={quietCard}>
-          <CardContent sx={{ p: 2 }}>
+        <Card elevation={0} sx={shellCardSx}>
+          <CardContent sx={{ p: 2.25 }}>
             <Grid container spacing={1.5} alignItems="center">
               <Grid item xs={12} md={4}>
                 <TextField
@@ -514,16 +587,16 @@ export default function CategoriesPage() {
                     setQ(e.target.value);
                     setPage(1);
                   }}
-                  placeholder="Search title, brand, model, make…"
+                  placeholder="Search title, brand, model, make..."
                   fullWidth
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon sx={{ color: "rgba(255,255,255,0.6)" }} />
+                        <SearchIcon sx={{ color: brand.muted }} />
                       </InputAdornment>
                     ),
                   }}
-                  sx={textFieldStyle}
+                  sx={inputSx}
                 />
               </Grid>
 
@@ -536,11 +609,11 @@ export default function CategoriesPage() {
                       setPage(1);
                     }}
                     displayEmpty
-                    sx={selectStyle}
+                    sx={selectSx}
                   >
                     {CATEGORY_OPTIONS.map((c) => (
                       <MenuItem key={c || "all"} value={c}>
-                        <span style={{ color: "whitesmoke" }}>{c || "All categories"}</span>
+                        {c || "All categories"}
                       </MenuItem>
                     ))}
                   </Select>
@@ -556,83 +629,67 @@ export default function CategoriesPage() {
                   }}
                   placeholder="ZIP"
                   fullWidth
-                  sx={textFieldStyle}
+                  sx={inputSx}
                 />
               </Grid>
 
               <Grid item xs={12} md={3} sx={{ display: { xs: "none", md: "block" } }}>
-                <Stack spacing={0.5}>
-                  <Typography sx={{ fontSize: 12, color: "rgba(230,238,247,0.72)" }}>
-                    Price range (${price[0]} – ${price[1]})
-                  </Typography>
-                  <Slider
-                    value={price}
-                    onChange={(_, val) => {
-                      setPrice(val);
-                      setPage(1);
-                    }}
-                    valueLabelDisplay="off"
-                    min={0}
-                    max={5000}
-                  />
-                </Stack>
+                <Typography sx={priceMetaSx}>
+                  Price range (${price[0]} - ${price[1]})
+                </Typography>
+                <Slider
+                  value={price}
+                  onChange={(_, val) => {
+                    setPrice(val);
+                    setPage(1);
+                  }}
+                  valueLabelDisplay="off"
+                  min={0}
+                  max={5000}
+                />
               </Grid>
             </Grid>
           </CardContent>
         </Card>
 
-        {/* content layout */}
-        <Grid
-          container
-          columnSpacing={2}
-          rowSpacing={2}
-          sx={{
-            mt: 2,
-            alignItems: "flex-start",
-          }}
-        >
-          {/* sidebar */}
+        <Grid container columnSpacing={2.25} rowSpacing={2.25} sx={{ mt: 1 }}>
           <Grid item xs={12} md={3} sx={{ display: { xs: "none", md: "block" } }}>
-            <Card elevation={0} sx={{ ...quietCard }}>
+            <Card elevation={0} sx={shellCardSx}>
               {SideFilters}
             </Card>
           </Grid>
 
-          {/* results */}
-          <Grid
-            item
-            xs={12}
-            md={9}
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "flex-start",
-              alignItems: "stretch",
-              width: "60%",
-              minHeight: 0,
-            }}
-          >
-            {/* Meta / count */}
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-              <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>
-                {loading ? "Loading…" : error ? "Error loading listings" : `${count} results`}
+          <Grid item xs={12} md={9}>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5, flexWrap: "wrap" }}>
+              <Typography sx={pageSubSx}>
+                {loading ? "Loading..." : error ? "Error loading listings" : `${count} results`}
               </Typography>
-              <Divider flexItem sx={{ borderColor: "rgba(255,255,255,0.08)", mx: 1 }} />
-              {chipsPreview.map((t) => (
-                <Chip key={t} size="small" label={t} sx={{ ...pillStyle }} />
-              ))}
+
+              {chipsPreview.length > 0 && (
+                <>
+                  <Divider
+                    flexItem
+                    sx={{
+                      mx: 1,
+                      borderColor: brand.border,
+                    }}
+                  />
+                  {chipsPreview.map((t) => (
+                    <Chip key={t} size="small" label={t} sx={filterChipSx} />
+                  ))}
+                </>
+              )}
             </Stack>
 
             {error && (
-              <Typography sx={{ color: "#ffb3b3", mb: 2 }}>
+              <Typography sx={{ color: "#B42318", mb: 2 }}>
                 {error.message || "Something went wrong."}
               </Typography>
             )}
 
-            {/* list */}
             {!loading && !error && (
               <Box sx={{ width: "100%" }}>
-                <Stack spacing={2} sx={{ width: "100%" }}>
+                <Stack spacing={2}>
                   {pagedItems.map((it) => {
                     const listingId = getListingId(it);
 
@@ -650,32 +707,8 @@ export default function CategoriesPage() {
                         component={RouterLink}
                         to={to}
                         sx={{
-                          ...quietCard,
-                          width: "100%",
-                          display: "flex",
-                          flexDirection: { xs: "column", sm: "row" },
-                          position: "relative",
-                          overflow: "hidden",
+                          ...listingCardSx,
                           textDecoration: "none",
-                          background:
-                            "linear-gradient(135deg, rgba(22,30,46,0.96), rgba(9,13,23,0.98))",
-                          borderColor: "rgba(148,163,184,0.4)",
-                          boxShadow: "0 18px 35px rgba(15,23,42,0.7)",
-                          "&::before": {
-                            content: '""',
-                            position: "absolute",
-                            left: 0,
-                            top: 0,
-                            bottom: 0,
-                            width: 4,
-                            background: "linear-gradient(180deg, #38bdf8, #a855f7)",
-                          },
-                          "&:hover": {
-                            transform: "translateY(-4px)",
-                            borderColor: "#38bdf8",
-                            boxShadow: "0 22px 45px rgba(8,47,73,0.85)",
-                          },
-                          transition: "all .18s ease-out",
                         }}
                       >
                         <CardContent
@@ -684,7 +717,7 @@ export default function CategoriesPage() {
                             flex: 1,
                             display: "flex",
                             flexDirection: "column",
-                            gap: 0.5,
+                            gap: 0.6,
                             minWidth: 0,
                           }}
                         >
@@ -695,34 +728,21 @@ export default function CategoriesPage() {
                             sx={{ mb: 0.5 }}
                             spacing={1}
                           >
-                            <Typography
-                              variant="subtitle1"
-                              sx={{
-                                fontWeight: 800,
-                                pr: 1,
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                                color: "#fff",
-                              }}
-                            >
+                            <Typography sx={listingTitleSx} noWrap>
                               {it.title || it.name || "(no title)"}
                             </Typography>
 
                             {it.condition && (
                               <Chip
                                 size="small"
-                                label={it.condition}
+                                label={String(it.condition).replaceAll("_", " ")}
                                 icon={<VerifiedIcon sx={{ fontSize: 14 }} />}
-                                sx={{ ...pillStyle, fontSize: 11, borderRadius: 999 }}
+                                sx={statusChipSx}
                               />
                             )}
                           </Stack>
 
-                          <Typography
-                            sx={{ color: "rgba(230,238,247,0.68)", fontSize: 13, mb: 0.5 }}
-                            noWrap
-                          >
+                          <Typography sx={listingMetaSx} noWrap>
                             {(it.brand || "") + (it.model ? ` ${it.model}` : "")}
                           </Typography>
 
@@ -733,83 +753,49 @@ export default function CategoriesPage() {
                             sx={{ mb: 0.75, flexWrap: "wrap" }}
                           >
                             {it.category && (
-                              <Chip
-                                label={it.category}
-                                size="small"
-                                sx={{ ...pillStyle, borderRadius: 999, fontSize: 11 }}
-                              />
+                              <Chip label={it.category} size="small" sx={filterChipSx} />
                             )}
+
                             {toArray(it.techTypes)
                               .slice(0, 2)
                               .map((t) => (
-                                <Chip
-                                  key={t}
-                                  label={t}
-                                  size="small"
-                                  sx={{ ...pillStyle, borderRadius: 999, fontSize: 11 }}
-                                />
+                                <Chip key={t} label={t} size="small" sx={filterChipSx} />
                               ))}
+
                             {toArray(it.deviceTypes || it.deviceType)
                               .slice(0, 1)
                               .map((d) => (
-                                <Chip
-                                  key={d}
-                                  label={d}
-                                  size="small"
-                                  sx={{ ...pillStyle, borderRadius: 999, fontSize: 11 }}
-                                />
+                                <Chip key={d} label={d} size="small" sx={filterChipSx} />
                               ))}
                           </Stack>
 
                           <Stack direction="row" justifyContent="space-between" alignItems="flex-end">
                             <Box>
-                              <Typography variant="h6" sx={{ fontWeight: 900, lineHeight: 1.1, color: "#fff" }}>
+                              <Typography sx={priceValueSx}>
                                 ${it.rescuePrice ?? it.price ?? 0}
                               </Typography>
-                              <Typography sx={{ fontSize: 11, color: "rgba(148,163,184,0.9)" }}>
-                                per unit
-                              </Typography>
+                              <Typography sx={unitMetaSx}>per unit</Typography>
                             </Box>
 
                             {(it.pickup?.address?.zip || it.zipcode) && (
-                              <Typography sx={{ color: "rgba(203,213,225,0.86)", fontSize: 13, textAlign: "right" }}>
-                                ZIP {it.pickup?.address?.zip || it.zipcode}
-                              </Typography>
+                              <Stack direction="row" spacing={0.5} alignItems="center">
+                                <LocalShippingRoundedIcon sx={{ fontSize: 15, color: brand.muted }} />
+                                <Typography sx={zipTextSx}>
+                                  ZIP {it.pickup?.address?.zip || it.zipcode}
+                                </Typography>
+                              </Stack>
                             )}
                           </Stack>
                         </CardContent>
 
-                        <CardActions
-                          sx={{
-                            px: 2.5,
-                            py: 2,
-                            borderLeft: { xs: "none", sm: "1px solid rgba(15,23,42,0.9)" },
-                            borderTop: { xs: "1px solid rgba(15,23,42,0.9)", sm: "none" },
-                            display: "flex",
-                            flexDirection: "column",
-                            justifyContent: "center",
-                            gap: 1,
-                            minWidth: { xs: "100%", sm: 180 },
-                            bgcolor: "rgba(15,23,42,0.85)",
-                          }}
-                        >
+                        <CardActions sx={listingActionsSx}>
                           <Button
                             variant="contained"
                             size="small"
                             component={RouterLink}
                             to={to}
                             onClick={(e) => e.stopPropagation()}
-                            sx={{
-                              bgcolor: "#e6eef7",
-                              color: "#020617",
-                              fontWeight: 800,
-                              borderRadius: 999,
-                              px: 2.5,
-                              "&:hover": { bgcolor: "#cfe0f4" },
-                              textTransform: "none",
-                              fontSize: 13,
-                              width: "100%",
-                            }}
+                            sx={primaryButtonSx}
                           >
                             View details
                           </Button>
@@ -817,16 +803,12 @@ export default function CategoriesPage() {
                           <Button
                             variant="text"
                             size="small"
+                            startIcon={<SellRoundedIcon />}
                             onClick={(e) => {
-                              e.preventDefault(); // don't navigate away
+                              e.preventDefault();
                               e.stopPropagation();
                             }}
-                            sx={{
-                              color: "rgba(248,250,252,0.88)",
-                              textTransform: "none",
-                              fontSize: 12,
-                              width: "100%",
-                            }}
+                            sx={linkButtonSx}
                           >
                             Hold for 15 min
                           </Button>
@@ -836,7 +818,6 @@ export default function CategoriesPage() {
                   })}
                 </Stack>
 
-                {/* Pagination */}
                 {pages > 1 && (
                   <Stack alignItems="center" sx={{ mt: 3 }}>
                     <Pagination
@@ -844,8 +825,13 @@ export default function CategoriesPage() {
                       page={page}
                       onChange={(_, p) => setPage(p)}
                       sx={{
-                        "& .MuiPaginationItem-root": { color: "rgba(255,255,255,0.88)" },
-                        "& .Mui-selected": { bgcolor: "rgba(255,255,255,0.12) !important" },
+                        "& .MuiPaginationItem-root": {
+                          color: brand.navy,
+                          fontFamily: '"Semplicita Pro", sans-serif',
+                        },
+                        "& .Mui-selected": {
+                          bgcolor: `${alpha(brand.navy, 0.10)} !important`,
+                        },
                       }}
                     />
                   </Stack>
@@ -855,12 +841,17 @@ export default function CategoriesPage() {
           </Grid>
         </Grid>
 
-        {/* mobile drawer */}
         <Drawer
           anchor="right"
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
-          PaperProps={{ sx: { bgcolor: "#0b0f14", color: "#e6eef7" } }}
+          PaperProps={{
+            sx: {
+              bgcolor: brand.white,
+              color: brand.text,
+              borderLeft: `1px solid ${brand.border}`,
+            },
+          }}
         >
           {SideFilters}
         </Drawer>
@@ -869,53 +860,234 @@ export default function CategoriesPage() {
   );
 }
 
-/* ——— Styles ——— */
-const quietCard = {
-  bgcolor: "rgba(255,255,255,0.02)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 3,
+const shellCardSx = {
+  borderRadius: 5,
+  border: `1px solid ${brand.border}`,
+  bgcolor: brand.white,
+  boxShadow: "0 12px 32px rgba(30, 58, 95, 0.05)",
 };
 
-const accStyle = {
+const accordionSx = {
   bgcolor: "transparent",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 2,
+  border: `1px solid ${brand.border}`,
+  borderRadius: "16px !important",
   mb: 1,
+  boxShadow: "none",
   "&:before": { display: "none" },
 };
 
-const accTitle = { fontWeight: 700, color: "rgba(255,255,255,0.9)" };
-const labelStyle = { color: "rgba(230,238,247,0.9)" };
-
-const checkboxStyle = {
-  color: "rgba(255,255,255,0.6)",
-  "&.Mui-checked": { color: "#2a8cff" },
+const accordionTitleSx = {
+  fontWeight: 700,
+  color: brand.navy,
+  fontFamily: '"Semplicita Pro", sans-serif',
 };
 
-const textFieldStyle = {
-  "& .MuiInputBase-root": {
-    bgcolor: "rgba(255,255,255,0.03)",
-    borderRadius: 2,
-    color: "rgba(255,255,255,0.9)",
+const filterLabelSx = {
+  color: brand.text,
+  "& .MuiFormControlLabel-label": {
+    fontFamily: '"Semplicita Pro", sans-serif',
+    fontSize: 14,
   },
-  "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.7)" },
-  "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
-  "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
 };
 
-const selectStyle = {
-  ...textFieldStyle,
-  "& .MuiSelect-select": { py: 1.2 },
+const checkboxSx = {
+  color: alpha(brand.navy, 0.55),
+  "&.Mui-checked": {
+    color: brand.navy,
+  },
 };
 
-const pillStyle = {
-  bgcolor: "transparent",
-  border: "1px solid rgba(255,255,255,0.16)",
-  color: "rgba(255,255,255,0.78)",
-  backdropFilter: "blur(4px)",
+const inputSx = {
+  "& .MuiInputBase-root": {
+    bgcolor: brand.white,
+    borderRadius: 3,
+    color: brand.text,
+    fontFamily: '"Semplicita Pro", sans-serif',
+  },
+  "& .MuiInputLabel-root": {
+    color: brand.muted,
+    fontFamily: '"Semplicita Pro", sans-serif',
+  },
+  "& .MuiOutlinedInput-notchedOutline": {
+    borderColor: brand.border,
+  },
+  "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+    borderColor: alpha(brand.navy, 0.45),
+  },
+  "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+    borderColor: brand.navy,
+  },
 };
 
-const pillActive = {
-  bgcolor: "rgba(255,255,255,0.1)",
-  borderColor: "rgba(255,255,255,0.28)",
+const selectSx = {
+  borderRadius: 3,
+  bgcolor: brand.white,
+  color: brand.text,
+  fontFamily: '"Semplicita Pro", sans-serif',
+  "& .MuiOutlinedInput-notchedOutline": {
+    borderColor: brand.border,
+  },
+  "&:hover .MuiOutlinedInput-notchedOutline": {
+    borderColor: alpha(brand.navy, 0.45),
+  },
+  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+    borderColor: brand.navy,
+  },
+  "& .MuiSelect-select": {
+    py: 1.2,
+  },
+};
+
+const filterChipSx = {
+  bgcolor: alpha(brand.navy, 0.05),
+  color: brand.navy,
+  border: `1px solid ${alpha(brand.navy, 0.12)}`,
+  fontWeight: 700,
+  borderRadius: 999,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const activeFilterChipSx = {
+  bgcolor: alpha(brand.green, 0.10),
+  color: brand.green,
+  borderColor: alpha(brand.green, 0.20),
+};
+
+const statusChipSx = {
+  bgcolor: alpha(brand.green, 0.10),
+  color: brand.green,
+  border: `1px solid ${alpha(brand.green, 0.18)}`,
+  fontWeight: 700,
+  borderRadius: 999,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const listingCardSx = {
+  width: "100%",
+  display: "flex",
+  flexDirection: { xs: "column", sm: "row" },
+  borderRadius: 5,
+  border: `1px solid ${brand.border}`,
+  bgcolor: brand.white,
+  overflow: "hidden",
+  boxShadow: "0 12px 32px rgba(30, 58, 95, 0.05)",
+  transition: "all .18s ease-out",
+  "&:hover": {
+    transform: "translateY(-3px)",
+    borderColor: alpha(brand.navy, 0.24),
+    boxShadow: "0 18px 40px rgba(30, 58, 95, 0.10)",
+  },
+};
+
+const listingActionsSx = {
+  px: 2.25,
+  py: 2,
+  borderLeft: { xs: "none", sm: `1px solid ${brand.border}` },
+  borderTop: { xs: `1px solid ${brand.border}`, sm: "none" },
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "center",
+  gap: 1,
+  minWidth: { xs: "100%", sm: 190 },
+  bgcolor: brand.grayBg,
+};
+
+const primaryButtonSx = {
+  bgcolor: brand.navy,
+  color: brand.white,
+  fontWeight: 700,
+  borderRadius: 999,
+  px: 2.5,
+  textTransform: "none",
+  boxShadow: "none",
+  fontFamily: '"Semplicita Pro", sans-serif',
+  width: "100%",
+  "&:hover": {
+    bgcolor: "#16304F",
+    boxShadow: "none",
+  },
+};
+
+const linkButtonSx = {
+  color: brand.navy,
+  textTransform: "none",
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
+  width: "100%",
+  "&:hover": {
+    bgcolor: "transparent",
+    color: brand.green,
+  },
+};
+
+const sectionTitleSx = {
+  fontSize: 22,
+  fontWeight: 800,
+  color: brand.navy,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const sectionSubSx = {
+  fontSize: 14,
+  lineHeight: 1.7,
+  color: brand.muted,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const eyebrowSx = {
+  fontSize: 13,
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const pageSubSx = {
+  color: brand.muted,
+  fontSize: 15,
+  lineHeight: 1.7,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const emptyFilterTextSx = {
+  color: brand.muted,
+  fontSize: 12,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const listingTitleSx = {
+  fontWeight: 800,
+  color: brand.text,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const listingMetaSx = {
+  color: brand.muted,
+  fontSize: 13,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const priceMetaSx = {
+  fontSize: 12,
+  color: brand.muted,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const priceValueSx = {
+  fontSize: 26,
+  lineHeight: 1.1,
+  fontWeight: 900,
+  color: brand.navy,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const unitMetaSx = {
+  fontSize: 11,
+  color: brand.muted,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const zipTextSx = {
+  color: brand.muted,
+  fontSize: 13,
+  textAlign: "right",
+  fontFamily: '"Semplicita Pro", sans-serif',
 };

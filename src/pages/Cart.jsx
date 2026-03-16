@@ -2,54 +2,53 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/http";
 import {
+  Alert,
+  Avatar,
   Box,
-  Container,
-  Stack,
-  Typography,
+  Button,
   Card,
   CardContent,
-  Divider,
-  Button,
-  IconButton,
-  TextField,
-  Grid,
   Chip,
-  Alert,
+  Container,
+  Divider,
+  Grid,
+  IconButton,
   Snackbar,
-  Avatar,
+  Stack,
+  TextField,
   Tooltip,
+  Typography,
+  alpha,
 } from "@mui/material";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-
 import Inventory2Icon from "@mui/icons-material/Inventory2";
+import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import VerifiedIcon from "@mui/icons-material/Verified";
+import SellRoundedIcon from "@mui/icons-material/SellRounded";
 
 const CART_KEY = "cart";
 
-/**
- * Cart model stored in localStorage (as built in your ListingPage):
- * [
- *  { listingId, title, price, photo, quantity, condition, brand, model }
- * ]
- *
- * This page:
- * - Loads cart from localStorage
- * - Optionally refreshes details from backend per listingId (safe if endpoint exists)
- * - Lets user update qty, remove items, clear cart
- * - Shows totals
- * - Placeholder checkout button
- */
+const brand = {
+  white: "#FFFFFF",
+  navy: "#1E3A5F",
+  green: "#2E7D32",
+  grayBg: "#F5F7FA",
+  text: "#1A1A1A",
+  muted: "#5F6B7A",
+  border: "#D9E1EA",
+};
+
 export default function CartPage() {
   const navigate = useNavigate();
-  const [items, setItems] = useState([]); // local cart items
+  const [items, setItems] = useState([]);
   const [err, setErr] = useState("");
   const [toast, setToast] = useState({ open: false, type: "success", msg: "" });
   const [refreshing, setRefreshing] = useState(false);
 
-  // 1) Load from localStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem(CART_KEY) || "[]";
@@ -60,8 +59,6 @@ export default function CartPage() {
     }
   }, []);
 
-  // 2) (Optional) Refresh with latest listing data
-  // If your backend is stable, this keeps cart current (price/title/photo).
   useEffect(() => {
     let mounted = true;
 
@@ -72,7 +69,6 @@ export default function CartPage() {
       try {
         const next = await Promise.all(
           items.map(async (it) => {
-            // If listingId missing, keep as-is
             if (!it?.listingId) return it;
 
             try {
@@ -80,9 +76,8 @@ export default function CartPage() {
                 `http://localhost:8080/v1/listing/${encodeURIComponent(it.listingId)}`
               );
               const d = res.data || {};
-
-              // Merge backend data onto cart item (keep quantity)
-              const cover = Array.isArray(d.photos) && d.photos.length ? d.photos[0] : it.photo;
+              const cover =
+                Array.isArray(d.photos) && d.photos.length ? d.photos[0] : it.photo;
 
               return {
                 ...it,
@@ -95,7 +90,7 @@ export default function CartPage() {
                 _fresh: true,
               };
             } catch {
-              return it; // fail silently; cart still works
+              return it;
             }
           })
         );
@@ -103,18 +98,18 @@ export default function CartPage() {
         if (!mounted) return;
         setItems(next);
         localStorage.setItem(CART_KEY, JSON.stringify(next));
+        window.dispatchEvent(new Event("cart:updated"));
       } finally {
         if (mounted) setRefreshing(false);
       }
     }
 
-    // refresh once on mount load (after initial load)
     refresh();
     return () => {
       mounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // run once
+  }, []);
 
   const subtotal = useMemo(() => {
     return items.reduce((sum, it) => {
@@ -131,11 +126,14 @@ export default function CartPage() {
   const persist = (next) => {
     setItems(next);
     localStorage.setItem(CART_KEY, JSON.stringify(next));
+    window.dispatchEvent(new Event("cart:updated"));
   };
 
   const inc = (listingId) => {
     const next = items.map((it) =>
-      it.listingId === listingId ? { ...it, quantity: (Number(it.quantity) || 1) + 1 } : it
+      it.listingId === listingId
+        ? { ...it, quantity: (Number(it.quantity) || 1) + 1 }
+        : it
     );
     persist(next);
   };
@@ -148,6 +146,7 @@ export default function CartPage() {
         return { ...it, quantity: q };
       })
       .filter((it) => (Number(it.quantity) || 0) > 0);
+
     persist(next);
   };
 
@@ -156,6 +155,7 @@ export default function CartPage() {
     const next = items
       .map((it) => (it.listingId === listingId ? { ...it, quantity: q } : it))
       .filter((it) => (Number(it.quantity) || 0) > 0);
+
     persist(next);
   };
 
@@ -180,12 +180,24 @@ export default function CartPage() {
   };
 
   const checkout = () => {
-    // Placeholder: connect this to your checkout flow when ready.
-    setToast({ open: true, type: "success", msg: "Checkout coming soon ✅" });
+    setToast({ open: true, type: "success", msg: "Checkout coming soon." });
   };
 
   return (
-    <Box sx={{ bgcolor: "#0b0f14", minHeight: "100vh", color: "#e6eef7" }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: brand.grayBg,
+        color: brand.text,
+        background: `radial-gradient(circle at top right, ${alpha(
+          brand.green,
+          0.06
+        )} 0%, transparent 20%), radial-gradient(circle at left top, ${alpha(
+          brand.navy,
+          0.05
+        )} 0%, transparent 28%), ${brand.grayBg}`,
+      }}
+    >
       <Container
         maxWidth={false}
         disableGutters
@@ -198,31 +210,52 @@ export default function CartPage() {
           spacing={2}
           sx={{ mb: 3 }}
         >
-          <Stack direction="row" spacing={1.25} alignItems="center">
-            <Avatar sx={{ bgcolor: "rgba(255,255,255,0.06)" }}>
-              <ShoppingCartIcon />
-            </Avatar>
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: "-0.02em" }}>
-                Cart
-              </Typography>
-              <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>
-                {itemCount} item{itemCount === 1 ? "" : "s"} • Subtotal ${subtotal.toLocaleString()}
-                {refreshing ? " • refreshing…" : ""}
-              </Typography>
+          <Box>
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 1,
+                px: 1.5,
+                py: 0.75,
+                borderRadius: 999,
+                bgcolor: alpha(brand.green, 0.08),
+                border: `1px solid ${alpha(brand.green, 0.18)}`,
+                color: brand.green,
+                mb: 2,
+              }}
+            >
+              <ShoppingCartIcon sx={{ fontSize: 18 }} />
+              <Typography sx={eyebrowSx}>Cart</Typography>
             </Box>
-          </Stack>
 
-          <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1.25} alignItems="center">
+              <Avatar
+                sx={{
+                  bgcolor: alpha(brand.navy, 0.08),
+                  color: brand.navy,
+                  border: `1px solid ${alpha(brand.navy, 0.12)}`,
+                }}
+              >
+                <ShoppingCartIcon />
+              </Avatar>
+              <Box>
+                <Typography sx={pageTitleSx}>Cart</Typography>
+                <Typography sx={sectionSubSx}>
+                  {itemCount} item{itemCount === 1 ? "" : "s"} • Subtotal $
+                  {subtotal.toLocaleString()}
+                  {refreshing ? " • refreshing..." : ""}
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
             <Button
               variant="outlined"
               onClick={clearCart}
               disabled={!items.length}
-              sx={{
-                borderColor: "rgba(255,255,255,0.22)",
-                color: "rgba(255,255,255,0.9)",
-                "&:hover": { borderColor: "rgba(255,255,255,0.4)" },
-              }}
+              sx={secondaryButtonSx}
             >
               Clear
             </Button>
@@ -230,12 +263,7 @@ export default function CartPage() {
               variant="contained"
               onClick={checkout}
               disabled={!items.length}
-              sx={{
-                bgcolor: "#e6eef7",
-                color: "#0b0f14",
-                fontWeight: 900,
-                "&:hover": { bgcolor: "#cfe0f4" },
-              }}
+              sx={primaryButtonSx}
             >
               Checkout
             </Button>
@@ -243,60 +271,43 @@ export default function CartPage() {
         </Stack>
 
         {err && (
-          <Alert
-            severity="error"
-            sx={{
-              mb: 2,
-              bgcolor: "rgba(255,255,255,0.06)",
-              color: "#e6eef7",
-              "& .MuiAlert-icon": { color: "inherit" },
-            }}
-          >
+          <Alert severity="error" sx={{ mb: 2.5, borderRadius: 3 }}>
             {err}
           </Alert>
         )}
 
         {!items.length ? (
-          <Card elevation={0} sx={quietCard}>
+          <Card elevation={0} sx={panelCardSx}>
             <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-              <Typography variant="h6" sx={{ fontWeight: 900, mb: 0.5 }}>
-                Your cart is empty
-              </Typography>
-              <Typography sx={{ color: "rgba(230,238,247,0.72)", mb: 2 }}>
+              <Typography sx={sectionTitleSx}>Your cart is empty</Typography>
+              <Typography sx={{ ...sectionSubSx, mt: 0.75, mb: 2.25 }}>
                 Browse listings and add items to your cart.
               </Typography>
               <Button
                 variant="contained"
                 onClick={() => navigate("/categories")}
-                sx={{
-                  bgcolor: "#e6eef7",
-                  color: "#0b0f14",
-                  fontWeight: 900,
-                  "&:hover": { bgcolor: "#cfe0f4" },
-                }}
+                sx={primaryButtonSx}
               >
                 Browse listings
               </Button>
             </CardContent>
           </Card>
         ) : (
-          <Grid container spacing={3}>
-            {/* Items */}
+          <Grid container spacing={2.25}>
             <Grid item xs={12} lg={8}>
               <Stack spacing={2}>
                 {items.map((it) => (
-                  <Card key={it.listingId} elevation={0} sx={quietCard}>
-                    <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                  <Card key={it.listingId} elevation={0} sx={panelCardSx}>
+                    <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
                       <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                        {/* Image */}
                         <Box
                           sx={{
                             width: { xs: "100%", sm: 180 },
                             height: { xs: 220, sm: 140 },
-                            borderRadius: 3,
+                            borderRadius: 4,
                             overflow: "hidden",
-                            border: "1px solid rgba(255,255,255,0.08)",
-                            bgcolor: "rgba(255,255,255,0.02)",
+                            border: `1px solid ${brand.border}`,
+                            bgcolor: brand.grayBg,
                             flexShrink: 0,
                           }}
                         >
@@ -305,7 +316,12 @@ export default function CartPage() {
                               component="img"
                               src={it.photo}
                               alt={it.title}
-                              sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                              sx={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                                display: "block",
+                              }}
                             />
                           ) : (
                             <Box
@@ -314,7 +330,7 @@ export default function CartPage() {
                                 height: "100%",
                                 display: "grid",
                                 placeItems: "center",
-                                color: "rgba(230,238,247,0.7)",
+                                color: brand.muted,
                               }}
                             >
                               <Inventory2Icon />
@@ -322,29 +338,46 @@ export default function CartPage() {
                           )}
                         </Box>
 
-                        {/* Info */}
                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="flex-start"
+                            spacing={1}
+                          >
                             <Box sx={{ minWidth: 0 }}>
-                              <Typography variant="h6" sx={{ fontWeight: 900 }} noWrap>
+                              <Typography sx={itemTitleSx} noWrap>
                                 {it.title || "Listing"}
                               </Typography>
-                              <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>
+                              <Typography sx={itemMetaSx}>
                                 {(it.brand || "—") + (it.model ? ` • ${it.model}` : "")}
                               </Typography>
-                              <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                sx={{ mt: 1 }}
+                                flexWrap="wrap"
+                                useFlexGap
+                              >
                                 {it.condition ? (
                                   <Chip
                                     label={String(it.condition).replaceAll("_", " ")}
                                     size="small"
-                                    sx={pill}
+                                    sx={pillSx}
                                   />
                                 ) : null}
-                                <Chip label={`$${Number(it.price || 0).toLocaleString()}`} size="small" sx={pillGhost} />
+
+                                <Chip
+                                  label={`$${Number(it.price || 0).toLocaleString()}`}
+                                  size="small"
+                                  sx={pillGhostSx}
+                                />
+
                                 <Chip
                                   label={`ID: ${String(it.listingId).slice(-6)}`}
                                   size="small"
-                                  sx={pillGhost}
+                                  sx={pillGhostSx}
                                 />
                               </Stack>
                             </Box>
@@ -354,7 +387,7 @@ export default function CartPage() {
                                 <IconButton
                                   size="small"
                                   onClick={() => copy("Listing ID", it.listingId)}
-                                  sx={{ color: "rgba(255,255,255,0.8)" }}
+                                  sx={{ color: brand.navy }}
                                 >
                                   <ContentCopyIcon fontSize="small" />
                                 </IconButton>
@@ -364,7 +397,7 @@ export default function CartPage() {
                                 <IconButton
                                   size="small"
                                   onClick={() => removeItem(it.listingId)}
-                                  sx={{ color: "rgba(255,255,255,0.8)" }}
+                                  sx={{ color: brand.navy }}
                                 >
                                   <DeleteOutlineIcon fontSize="small" />
                                 </IconButton>
@@ -372,15 +405,19 @@ export default function CartPage() {
                             </Stack>
                           </Stack>
 
-                          <Divider sx={divider} />
+                          <Divider sx={sectionDividerSx} />
 
-                          {/* Qty row */}
-                          <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            spacing={2}
+                          >
                             <Stack direction="row" alignItems="center" spacing={1}>
                               <IconButton
                                 size="small"
                                 onClick={() => dec(it.listingId)}
-                                sx={qtyBtn}
+                                sx={qtyBtnSx}
                               >
                                 <RemoveIcon fontSize="small" />
                               </IconButton>
@@ -391,20 +428,21 @@ export default function CartPage() {
                                 type="number"
                                 inputProps={{ min: 1 }}
                                 size="small"
-                                sx={qtyField}
+                                sx={qtyFieldSx}
                               />
 
                               <IconButton
                                 size="small"
                                 onClick={() => inc(it.listingId)}
-                                sx={qtyBtn}
+                                sx={qtyBtnSx}
                               >
                                 <AddIcon fontSize="small" />
                               </IconButton>
                             </Stack>
 
-                            <Typography sx={{ fontWeight: 900, fontSize: 18 }}>
-                              ${(
+                            <Typography sx={lineTotalSx}>
+                              $
+                              {(
                                 Number(it.price || 0) * (Number(it.quantity) || 1)
                               ).toLocaleString()}
                             </Typography>
@@ -414,11 +452,7 @@ export default function CartPage() {
                             <Button
                               variant="outlined"
                               onClick={() => navigate(`/listing/${it.listingId}`)}
-                              sx={{
-                                borderColor: "rgba(255,255,255,0.22)",
-                                color: "rgba(255,255,255,0.9)",
-                                "&:hover": { borderColor: "rgba(255,255,255,0.4)" },
-                              }}
+                              sx={secondaryButtonSx}
                             >
                               View listing
                             </Button>
@@ -431,18 +465,15 @@ export default function CartPage() {
               </Stack>
             </Grid>
 
-            {/* Summary */}
             <Grid item xs={12} lg={4}>
-              <Card elevation={0} sx={quietCard}>
-                <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                  <Typography variant="h6" sx={{ fontWeight: 900 }}>
-                    Order summary
-                  </Typography>
-                  <Typography sx={{ color: "rgba(230,238,247,0.72)", mt: 0.5 }}>
+              <Card elevation={0} sx={panelCardSx}>
+                <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
+                  <Typography sx={sectionTitleSx}>Order summary</Typography>
+                  <Typography sx={{ ...sectionSubSx, mt: 0.5 }}>
                     Taxes and shipping will calculate at checkout.
                   </Typography>
 
-                  <Divider sx={divider} />
+                  <Divider sx={sectionDividerSx} />
 
                   <Stack spacing={1}>
                     <Row label="Items" value={`${itemCount}`} />
@@ -451,17 +482,17 @@ export default function CartPage() {
                     <Row label="Estimated tax" value="—" />
                   </Stack>
 
-                  <Divider sx={divider} />
+                  <Divider sx={sectionDividerSx} />
 
                   <Stack spacing={1}>
                     <Chip
-                      // icon={<VerifiedIcon />}
+                      icon={<VerifiedIcon />}
                       label="Buyer protection"
-                      sx={pill}
+                      sx={pillSx}
                     />
                     <Chip
                       label="Secure checkout (coming soon)"
-                      sx={pillGhost}
+                      sx={pillGhostSx}
                     />
                   </Stack>
 
@@ -469,13 +500,7 @@ export default function CartPage() {
                     fullWidth
                     variant="contained"
                     onClick={checkout}
-                    sx={{
-                      mt: 2,
-                      bgcolor: "#e6eef7",
-                      color: "#0b0f14",
-                      fontWeight: 900,
-                      "&:hover": { bgcolor: "#cfe0f4" },
-                    }}
+                    sx={{ ...primaryButtonSx, mt: 2 }}
                   >
                     Checkout
                   </Button>
@@ -483,10 +508,11 @@ export default function CartPage() {
                   <Button
                     fullWidth
                     variant="text"
+                    startIcon={<ArrowBackRoundedIcon />}
                     onClick={() => navigate(-1)}
-                    sx={{ mt: 1, color: "rgba(255,255,255,0.82)" }}
+                    sx={backButtonSx}
                   >
-                    ← Back
+                    Back
                   </Button>
                 </CardContent>
               </Card>
@@ -512,50 +538,162 @@ export default function CartPage() {
 function Row({ label, value }) {
   return (
     <Stack direction="row" justifyContent="space-between" alignItems="center">
-      <Typography sx={{ color: "rgba(230,238,247,0.72)", fontWeight: 700 }}>
-        {label}
-      </Typography>
-      <Typography sx={{ color: "rgba(230,238,247,0.92)", fontWeight: 900 }}>
-        {value}
-      </Typography>
+      <Typography sx={summaryLabelSx}>{label}</Typography>
+      <Typography sx={summaryValueSx}>{value}</Typography>
     </Stack>
   );
 }
 
-/* Styles */
-const quietCard = {
-  bgcolor: "rgba(255,255,255,0.02)",
-  border: "1px solid rgba(255,255,255,0.08)",
+const panelCardSx = {
+  borderRadius: 5,
+  border: `1px solid ${brand.border}`,
+  bgcolor: brand.white,
+  boxShadow: "0 12px 32px rgba(30, 58, 95, 0.05)",
+};
+
+const primaryButtonSx = {
+  bgcolor: brand.navy,
+  color: brand.white,
+  fontWeight: 700,
+  textTransform: "none",
   borderRadius: 3,
+  boxShadow: "none",
+  fontFamily: '"Semplicita Pro", sans-serif',
+  "&:hover": {
+    bgcolor: "#16304F",
+    boxShadow: "none",
+  },
 };
 
-const divider = { borderColor: "rgba(255,255,255,0.08)", my: 2 };
-
-const pill = {
-  bgcolor: "transparent",
-  border: "1px solid rgba(255,255,255,0.16)",
-  color: "rgba(255,255,255,0.88)",
-  backdropFilter: "blur(4px)",
+const secondaryButtonSx = {
+  borderColor: brand.border,
+  color: brand.navy,
+  fontWeight: 700,
+  textTransform: "none",
+  borderRadius: 3,
+  fontFamily: '"Semplicita Pro", sans-serif',
+  "&:hover": {
+    borderColor: brand.navy,
+    bgcolor: alpha(brand.navy, 0.03),
+  },
 };
 
-const pillGhost = {
-  bgcolor: "rgba(255,255,255,0.06)",
-  color: "rgba(255,255,255,0.9)",
+const backButtonSx = {
+  mt: 1,
+  color: brand.navy,
+  textTransform: "none",
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
+  "&:hover": {
+    bgcolor: "transparent",
+    color: brand.green,
+  },
 };
 
-const qtyBtn = {
-  border: "1px solid rgba(255,255,255,0.18)",
-  borderRadius: 2,
-  color: "rgba(255,255,255,0.9)",
+const pillSx = {
+  alignSelf: "flex-start",
+  bgcolor: alpha(brand.navy, 0.05),
+  color: brand.navy,
+  border: `1px solid ${alpha(brand.navy, 0.12)}`,
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
 };
 
-const qtyField = {
+const pillGhostSx = {
+  alignSelf: "flex-start",
+  bgcolor: alpha(brand.green, 0.08),
+  color: brand.green,
+  border: `1px solid ${alpha(brand.green, 0.14)}`,
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const qtyBtnSx = {
+  border: `1px solid ${brand.border}`,
+  borderRadius: 2.5,
+  color: brand.navy,
+  bgcolor: brand.white,
+  "&:hover": {
+    bgcolor: alpha(brand.navy, 0.03),
+    borderColor: brand.navy,
+  },
+};
+
+const qtyFieldSx = {
   width: 90,
   "& .MuiInputBase-root": {
-    bgcolor: "rgba(255,255,255,0.03)",
-    borderRadius: 2,
-    color: "rgba(255,255,255,0.92)",
+    bgcolor: brand.white,
+    borderRadius: 2.5,
+    color: brand.text,
+    fontFamily: '"Semplicita Pro", sans-serif',
   },
-  "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
-  "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
+  "& .MuiOutlinedInput-notchedOutline": {
+    borderColor: brand.border,
+  },
+  "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+    borderColor: alpha(brand.navy, 0.45),
+  },
+};
+
+const sectionDividerSx = {
+  my: 2,
+  borderColor: brand.border,
+};
+
+const eyebrowSx = {
+  fontSize: 13,
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const pageTitleSx = {
+  fontFamily: '"vvyPreston Display", serif',
+  fontSize: { xs: 30, md: 42 },
+  lineHeight: 1.05,
+  color: brand.navy,
+};
+
+const sectionTitleSx = {
+  fontSize: 22,
+  fontWeight: 800,
+  color: brand.navy,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const sectionSubSx = {
+  fontSize: 14,
+  lineHeight: 1.7,
+  color: brand.muted,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const itemTitleSx = {
+  fontWeight: 800,
+  color: brand.text,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const itemMetaSx = {
+  color: brand.muted,
+  fontSize: 14,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const lineTotalSx = {
+  fontWeight: 900,
+  fontSize: 20,
+  color: brand.navy,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const summaryLabelSx = {
+  color: brand.muted,
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const summaryValueSx = {
+  color: brand.text,
+  fontWeight: 900,
+  fontFamily: '"Semplicita Pro", sans-serif',
 };

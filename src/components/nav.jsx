@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   AppBar,
   Toolbar,
@@ -14,46 +14,48 @@ import {
   Divider,
   Badge,
   Tooltip,
+  Stack,
+  Container,
+  Link,
+  alpha,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 
-/**
- * ✅ Navbar shows:
- * - If NOT logged in: Sign Up / Log In
- * - If logged in: Dashboard / Profile Settings / Log out
- *
- * Cart:
- * - Uses localStorage key "cart" (array)
- * - Shows cart icon + badge count
- *
- * Auth keys:
- * - Supports legacy "token" + newer "accessToken"
- * - Clears "refreshToken", "user", "userId", and "session" on logout
- * - ✅ ALSO clears the cart on logout (cart is account-associated)
- */
-const TOKEN_KEY = "token"; // legacy
-const TOKEN_KEY_V2 = "accessToken"; // newer
+const brand = {
+  white: "#FFFFFF",
+  navy: "#1E3A5F",
+  green: "#2E7D32",
+  grayBg: "#ffffff",
+  text: "#1A1A1A",
+  muted: "#5F6B7A",
+  border: "#D9E1EA",
+};
+
+const TOKEN_KEY = "token";
+const TOKEN_KEY_V2 = "accessToken";
 const REFRESH_KEY = "refreshToken";
 const USER_KEY = "user";
 const USER_ID_KEY = "userId";
 const SESSION_KEY = "session";
 
-// cart key(s)
 const CART_KEY = "cart";
-// if you ever store other cart-related keys, add them here
 const CART_META_KEYS = ["cart:meta", "cart:coupon", "cart:lastViewed"];
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const toggleDrawer = (open) => () => setDrawerOpen(open);
 
-  // ✅ reactive auth state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const computeIsLoggedIn = useCallback(() => {
-    return Boolean(localStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY_V2));
+    return Boolean(
+      localStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY_V2)
+    );
   }, []);
 
   useEffect(() => {
@@ -69,7 +71,6 @@ export default function Navbar() {
     };
   }, [computeIsLoggedIn]);
 
-  // ✅ cart count
   const [cartCount, setCartCount] = useState(0);
 
   const computeCartCount = () => {
@@ -96,46 +97,6 @@ export default function Navbar() {
     };
   }, []);
 
-  const navLinks = [
-    // { label: "Home", path: "/" },
-    // { label: "Categories", path: "/categories" },
-    // { label: "Partners", path: "/partners" },
-  ];
-
-  const authedLinks = [
-    // { label: "Dashboard", path: "/dashboard/smb", variant: "outlined" },
-    // { label: "Profile Settings", path: "/account", variant: "contained" },
-  ];
-
-  const guestLinks = [
-    // { label: "Sign Up", path: "/signup", variant: "contained" },
-    // { label: "Log In", path: "/login", variant: "outlined" },
-  ];
-
-  const activeSx = {
-    "&.active": {
-      fontWeight: 700,
-      textDecoration: "underline",
-      textUnderlineOffset: "6px",
-    },
-  };
-
-  const containedBtnSx = {
-    bgcolor: "#e6eef7",
-    color: "#0b0f14",
-    fontWeight: 800,
-    px: 2.25,
-    "&:hover": { bgcolor: "#cfe0f4" },
-  };
-
-  const outlinedBtnSx = {
-    color: "#e6eef7",
-    borderColor: "rgba(255,255,255,0.28)",
-    px: 2,
-    "&:hover": { borderColor: "rgba(255,255,255,0.45)" },
-    ...activeSx,
-  };
-
   const clearAuthStorage = () => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(TOKEN_KEY_V2);
@@ -148,185 +109,453 @@ export default function Navbar() {
   const clearCartStorage = () => {
     localStorage.removeItem(CART_KEY);
     CART_META_KEYS.forEach((k) => localStorage.removeItem(k));
-
-    // update cart badge immediately (same tab)
     window.dispatchEvent(new Event("cart:updated"));
   };
 
   const handleLogout = () => {
     clearAuthStorage();
     clearCartStorage();
-
-    // update UI immediately
     setIsLoggedIn(false);
     window.dispatchEvent(new Event("auth:updated"));
-
     navigate("/login", { replace: true });
   };
+
+  const isLandingPage = location.pathname === "/";
+
+  const marketingLinks = [
+    { label: "Services", href: "#services" },
+    { label: "Process", href: "#process" },
+    { label: "Industries", href: "#industries" },
+    { label: "Trust", href: "#trust" },
+    { label: "Contact", href: "#contact" },
+  ];
+
+  const appLinks = [
+    { label: "Categories", path: "/categories" },
+    { label: "Partners", path: "/partners" },
+  ];
+
+  const authedLinks = [
+    { label: "Dashboard", path: "/dashboard/smb", variant: "text" },
+    { label: "Account", path: "/account", variant: "text" },
+  ];
+
+  const guestLinks = [
+    // { label: "Log In", path: "/login", variant: "text" },
+    // { label: "Sign Up", path: "/signup", variant: "contained" },
+  ];
 
   const rightLinks = isLoggedIn ? authedLinks : guestLinks;
 
   return (
     <>
-      <AppBar position="static" sx={{ backgroundColor: "#0f141c" }}>
-        <Toolbar>
-          {/* Brand */}
-          <Typography
-            variant="h6"
-            component={NavLink}
-            to="/"
-            style={{ textDecoration: "none" }}
+      <AppBar
+        position="sticky"
+        elevation={0}
+        sx={{
+           bgcolor: alpha(brand.white, 0.94),
+          color: brand.text,
+          backdropFilter: "blur(10px)",
+          borderBottom: `1px solid ${brand.border}`,
+        }}
+      >
+        <Container maxWidth="xl">
+          <Toolbar
+            disableGutters
             sx={{
-              color: "#e6eef7",
-              fontWeight: "bold",
-              flexGrow: 1,
-              "&.active": { textDecoration: "none" },
+              minHeight: 76,
+              justifyContent: "space-between",
+              gap: 2,
             }}
           >
-            Retech
-          </Typography>
-
-          {/* Desktop links */}
-          <Box
-            sx={{
-              display: { xs: "none", md: "flex" },
-              gap: 1,
-              alignItems: "center",
-            }}
-          >
-            {navLinks.map((link) => (
-              <Button
-                key={link.label}
-                component={NavLink}
-                to={link.path}
-                sx={{ color: "#e6eef7", ...activeSx }}
-              >
-                {link.label}
-              </Button>
-            ))}
-
-            <Divider
-              orientation="vertical"
-              flexItem
-              sx={{ mx: 1.5, borderColor: "rgba(255,255,255,0.18)" }}
-            />
-
-            {/* Cart icon */}
-            {/* <Tooltip title="Cart">
-              <IconButton
-                component={NavLink}
-                to="/cart"
-                sx={{
-                  color: "#e6eef7",
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  borderRadius: 2,
-                  "&:hover": { borderColor: "rgba(255,255,255,0.35)" },
-                  ...activeSx,
-                }}
-              >
-                <Badge
-                  badgeContent={cartCount}
-                  color="primary"
-                  overlap="circular"
+            <Box
+              component={NavLink}
+              to="/"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                textDecoration: "none",
+              }}
+            >
+  
+              <Box sx={{ display: { xs: "none", sm: "block" } }}>
+                <Typography
                   sx={{
-                    "& .MuiBadge-badge": {
-                      bgcolor: "#e6eef7",
-                      color: "#0b0f14",
-                      fontWeight: 900,
+                    fontSize: { xs: 22, md: 26 },
+                    lineHeight: 1,
+                    fontWeight: 700,
+                    color: brand.navy,
+                    fontFamily: '"vvyPreston Display", serif',
+                  }}
+                >
+                  ReTech
+                </Typography>
+                <Typography
+                  sx={{
+                    mt: 0.3,
+                    fontSize: 10,
+                    letterSpacing: "0.25em",
+                    textTransform: "uppercase",
+                    color: brand.muted,
+                    fontWeight: 700,
+                    fontFamily: '"Semplicita Pro", sans-serif',
+                  }}
+                >
+                  EcoSystems LLC
+                </Typography>
+              </Box>
+            </Box>
+
+            <Stack
+              direction="row"
+              spacing={3}
+              sx={{ display: { xs: "none", md: "flex" }, alignItems: "center" }}
+            >
+              {isLandingPage
+                ? marketingLinks.map((link) => (
+                    <Link
+                      key={link.label}
+                      href={link.href}
+                      underline="none"
+                      sx={{
+                        color: brand.text,
+                        fontWeight: 600,
+                        fontSize: 14,
+                        fontFamily: '"Semplicita Pro", sans-serif',
+                        "&:hover": { color: brand.navy },
+                      }}
+                    >
+                      {link.label}
+                    </Link>
+                  ))
+                : appLinks.map((link) => (
+                    <Button
+                      key={link.label}
+                      component={NavLink}
+                      to={link.path}
+                      sx={{
+                        color: brand.text,
+                        textTransform: "none",
+                        fontWeight: 600,
+                        fontSize: 14,
+                        fontFamily: '"Semplicita Pro", sans-serif',
+                        "&.active": { color: brand.navy },
+                      }}
+                    >
+                      {link.label}
+                    </Button>
+                  ))}
+            </Stack>
+
+            <Stack
+              direction="row"
+              spacing={1.25}
+              alignItems="center"
+              sx={{ display: { xs: "none", md: "flex" } }}
+            >
+              {/* Uncomment if you want cart visible in desktop nav */}
+              {/* <Tooltip title="Cart">
+                <IconButton
+                  component={NavLink}
+                  to="/cart"
+                  sx={{
+                    color: brand.navy,
+                    border: `1px solid ${brand.border}`,
+                    borderRadius: 2.5,
+                    "&:hover": {
+                      borderColor: brand.navy,
+                      bgcolor: alpha(brand.navy, 0.03),
                     },
                   }}
                 >
-                  <ShoppingCartIcon />
-                </Badge>
-              </IconButton>
-            </Tooltip> */}
+                  <Badge
+                    badgeContent={cartCount}
+                    color="primary"
+                    overlap="circular"
+                    sx={{
+                      "& .MuiBadge-badge": {
+                        bgcolor: brand.green,
+                        color: brand.white,
+                        fontWeight: 800,
+                      },
+                    }}
+                  >
+                    <ShoppingCartIcon />
+                  </Badge>
+                </IconButton>
+              </Tooltip> */}
 
-            {rightLinks.map((link) => (
-              <Button
-                key={link.label}
-                component={NavLink}
-                to={link.path}
-                variant={link.variant}
-                sx={link.variant === "contained" ? containedBtnSx : outlinedBtnSx}
-              >
-                {link.label}
-              </Button>
-            ))}
+              {rightLinks.map((link) => (
+                <Button
+                  key={link.label}
+                  component={NavLink}
+                  to={link.path}
+                  variant={link.variant}
+                  sx={
+                    link.variant === "contained"
+                      ? {
+                          bgcolor: brand.navy,
+                          color: brand.white,
+                          px: 2.5,
+                          py: 1.15,
+                          borderRadius: 3,
+                          textTransform: "none",
+                          fontWeight: 700,
+                          boxShadow: "none",
+                          fontFamily: '"Semplicita Pro", sans-serif',
+                          "&:hover": {
+                            bgcolor: "#16304F",
+                            boxShadow: "none",
+                          },
+                        }
+                      : {
+                          color: brand.text,
+                          px: 1.5,
+                          textTransform: "none",
+                          fontWeight: 600,
+                          fontFamily: '"Semplicita Pro", sans-serif',
+                          "&:hover": { color: brand.navy, bgcolor: "transparent" },
+                        }
+                  }
+                >
+                  {link.label}
+                </Button>
+              ))}
 
-            {isLoggedIn && (
-              <Button
-                onClick={handleLogout}
-                variant="text"
-                sx={{
-                  color: "rgba(255,255,255,0.8)",
-                  fontWeight: 700,
-                  textTransform: "none",
-                  ml: 0.5,
-                  "&:hover": { color: "#fff" },
-                }}
-              >
-                Log out
-              </Button>
-            )}
-          </Box>
+              {isLoggedIn && (
+                <Button
+                  onClick={handleLogout}
+                  variant="text"
+                  sx={{
+                    color: brand.muted,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    fontFamily: '"Semplicita Pro", sans-serif',
+                    "&:hover": {
+                      color: brand.navy,
+                      bgcolor: "transparent",
+                    },
+                  }}
+                >
+                  Log out
+                </Button>
+              )}
 
-          {/* Mobile menu button */}
-          <IconButton
-            edge="end"
-            color="inherit"
-            aria-label="menu"
-            onClick={toggleDrawer(true)}
-            sx={{ display: { xs: "flex", md: "none" } }}
-          >
-            <MenuIcon />
-          </IconButton>
-        </Toolbar>
+              {/* {isLandingPage && (
+                <Button
+                  href="#contact"
+                  variant="contained"
+                  sx={{
+                    bgcolor: brand.navy,
+                    color: brand.white,
+                    px: 2.5,
+                    py: 1.25,
+                    borderRadius: 3,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    boxShadow: "none",
+                    fontFamily: '"Semplicita Pro", sans-serif',
+                    "&:hover": { bgcolor: "#16304F", boxShadow: "none" },
+                  }}
+                >
+                  Request a Pickup
+                </Button>
+              )} */}
+            </Stack>
+
+            <IconButton
+              edge="end"
+              onClick={toggleDrawer(true)}
+              sx={{
+                display: { xs: "flex", md: "none" },
+                color: brand.navy,
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
+          </Toolbar>
+        </Container>
       </AppBar>
 
-      {/* Mobile drawer */}
       <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer(false)}>
         <Box
-          sx={{ width: 260, bgcolor: "#0f141c", height: "100%" }}
+          sx={{
+            width: 300,
+            height: "100%",
+            bgcolor: brand.white,
+            display: "flex",
+            flexDirection: "column",
+          }}
           role="presentation"
-          onClick={toggleDrawer(false)}
-          onKeyDown={toggleDrawer(false)}
         >
-          <List>
-            {navLinks.map((link) => (
-              <ListItemButton
-                key={link.label}
-                component={NavLink}
-                to={link.path}
-                sx={{ color: "#e6eef7", ...activeSx }}
+          <Box
+            sx={{
+              px: 2.5,
+              py: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderBottom: `1px solid ${brand.border}`,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <Box
+                component="img"
+                src="/logo/retech-logo.svg"
+                alt="ReTech EcoSystems LLC"
+                sx={{ height: 34, width: "auto" }}
+              />
+              <Typography
+                sx={{
+                  fontWeight: 700,
+                  color: brand.navy,
+                  fontFamily: '"Semplicita Pro", sans-serif',
+                }}
               >
-                <ListItemText primary={link.label} />
-              </ListItemButton>
-            ))}
+                ReTech
+              </Typography>
+            </Box>
 
-            {/* Cart in drawer */}
-            <ListItemButton component={NavLink} to="/cart" sx={{ color: "#e6eef7", ...activeSx }}>
-              <ListItemText primary={`Cart${cartCount ? ` (${cartCount})` : ""}`} />
-            </ListItemButton>
+            <IconButton onClick={toggleDrawer(false)} sx={{ color: brand.navy }}>
+              <CloseRoundedIcon />
+            </IconButton>
+          </Box>
+
+          <List sx={{ px: 1.5, py: 1.5 }}>
+            {isLandingPage
+              ? marketingLinks.map((link) => (
+                  <ListItemButton
+                    key={link.label}
+                    component="a"
+                    href={link.href}
+                    sx={{
+                      borderRadius: 3,
+                      color: brand.text,
+                    }}
+                  >
+                    <ListItemText
+                      primary={link.label}
+                      primaryTypographyProps={{
+                        fontWeight: 600,
+                        fontFamily: '"Semplicita Pro", sans-serif',
+                      }}
+                    />
+                  </ListItemButton>
+                ))
+              : appLinks.map((link) => (
+                  <ListItemButton
+                    key={link.label}
+                    component={NavLink}
+                    to={link.path}
+                    sx={{
+                      borderRadius: 3,
+                      color: brand.text,
+                      "&.active": {
+                        bgcolor: alpha(brand.navy, 0.06),
+                        color: brand.navy,
+                      },
+                    }}
+                  >
+                    <ListItemText
+                      primary={link.label}
+                      primaryTypographyProps={{
+                        fontWeight: 600,
+                        fontFamily: '"Semplicita Pro", sans-serif',
+                      }}
+                    />
+                  </ListItemButton>
+                ))}
+
+            {/* Uncomment if you want cart visible in drawer */}
+            {/* <ListItemButton
+              component={NavLink}
+              to="/cart"
+              sx={{
+                borderRadius: 3,
+                color: brand.text,
+                "&.active": {
+                  bgcolor: alpha(brand.navy, 0.06),
+                  color: brand.navy,
+                },
+              }}
+            >
+              <ListItemText
+                primary={`Cart${cartCount ? ` (${cartCount})` : ""}`}
+                primaryTypographyProps={{
+                  fontWeight: 600,
+                  fontFamily: '"Semplicita Pro", sans-serif',
+                }}
+              />
+            </ListItemButton> */}
           </List>
 
-          <Divider sx={{ borderColor: "rgba(255,255,255,0.18)" }} />
+          <Divider sx={{ borderColor: brand.border }} />
 
-          <List>
+          <List sx={{ px: 1.5, py: 1.5 }}>
             {rightLinks.map((link) => (
               <ListItemButton
                 key={link.label}
                 component={NavLink}
                 to={link.path}
-                sx={{ color: "#e6eef7", ...activeSx }}
+                sx={{
+                  borderRadius: 3,
+                  color: brand.text,
+                  "&.active": {
+                    bgcolor: alpha(brand.navy, 0.06),
+                    color: brand.navy,
+                  },
+                }}
               >
-                <ListItemText primary={link.label} />
+                <ListItemText
+                  primary={link.label}
+                  primaryTypographyProps={{
+                    fontWeight: 600,
+                    fontFamily: '"Semplicita Pro", sans-serif',
+                  }}
+                />
               </ListItemButton>
             ))}
 
             {isLoggedIn && (
-              <ListItemButton onClick={handleLogout} sx={{ color: "#e6eef7" }}>
-                <ListItemText primary="Log out" />
+              <ListItemButton
+                onClick={handleLogout}
+                sx={{ borderRadius: 3, color: brand.text }}
+              >
+                <ListItemText
+                  primary="Log out"
+                  primaryTypographyProps={{
+                    fontWeight: 600,
+                    fontFamily: '"Semplicita Pro", sans-serif',
+                  }}
+                />
               </ListItemButton>
+            )}
+
+            {isLandingPage && (
+              <Box sx={{ px: 1, pt: 1.5 }}>
+                <Button
+                  href="#contact"
+                  fullWidth
+                  variant="contained"
+                  sx={{
+                    bgcolor: brand.navy,
+                    color: brand.white,
+                    py: 1.35,
+                    borderRadius: 3,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    boxShadow: "none",
+                    fontFamily: '"Semplicita Pro", sans-serif',
+                    "&:hover": {
+                      bgcolor: "#16304F",
+                      boxShadow: "none",
+                    },
+                  }}
+                >
+                  Request a Pickup
+                </Button>
+              </Box>
             )}
           </List>
         </Box>

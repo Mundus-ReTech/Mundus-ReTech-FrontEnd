@@ -2,21 +2,22 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../lib/http";
 import {
+  Alert,
+  Avatar,
   Box,
-  Container,
-  Grid,
-  Stack,
-  Typography,
-  Chip,
   Button,
   Card,
   CardContent,
+  Chip,
+  Container,
   Divider,
-  Skeleton,
-  Alert,
-  Avatar,
+  Grid,
   IconButton,
+  Skeleton,
+  Stack,
   Tooltip,
+  Typography,
+  alpha,
 } from "@mui/material";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
@@ -25,6 +26,18 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
+import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import SellRoundedIcon from "@mui/icons-material/SellRounded";
+
+const brand = {
+  white: "#FFFFFF",
+  navy: "#1E3A5F",
+  green: "#2E7D32",
+  grayBg: "#F5F7FA",
+  text: "#1A1A1A",
+  muted: "#5F6B7A",
+  border: "#D9E1EA",
+};
 
 export default function ListingPage() {
   const { id } = useParams();
@@ -103,10 +116,6 @@ export default function ListingPage() {
     }
   };
 
-  /**
-   * ✅ Add to cart (localStorage)
-   * Later swap to POST /v1/cart if you implement it.
-   */
   const addToCart = async () => {
     try {
       setCartBusy(true);
@@ -133,7 +142,8 @@ export default function ListingPage() {
       }
 
       localStorage.setItem("cart", JSON.stringify(cart));
-      alert("Added to cart ✅");
+      window.dispatchEvent(new Event("cart:updated"));
+      alert("Added to cart");
     } catch (e) {
       console.error("Add to cart failed:", e);
       alert("Could not add to cart.");
@@ -153,16 +163,21 @@ export default function ListingPage() {
 
   if (err) {
     return (
-      <Box sx={{ bgcolor: "#0b0f14", minHeight: "100vh", color: "#e6eef7" }}>
-        <Container sx={{ py: 6 }}>
-          <Alert
-            severity="error"
-            sx={{
-              bgcolor: "rgba(255,255,255,0.06)",
-              color: "#e6eef7",
-              "& .MuiAlert-icon": { color: "inherit" },
-            }}
-          >
+      <Box
+        sx={{
+          minHeight: "100vh",
+          bgcolor: brand.grayBg,
+          background: `radial-gradient(circle at top right, ${alpha(
+            brand.green,
+            0.06
+          )} 0%, transparent 20%), radial-gradient(circle at left top, ${alpha(
+            brand.navy,
+            0.05
+          )} 0%, transparent 28%), ${brand.grayBg}`,
+        }}
+      >
+        <Container maxWidth="lg" sx={{ py: 6 }}>
+          <Alert severity="error" sx={{ borderRadius: 3 }}>
             {err}
           </Alert>
         </Container>
@@ -173,14 +188,18 @@ export default function ListingPage() {
   return (
     <Box
       sx={{
-        bgcolor: "#0b0f14",
         minHeight: "100vh",
-        color: "#e6eef7",
-        width: "100vw",
-        overflowX: "hidden",
+        bgcolor: brand.grayBg,
+        color: brand.text,
+        background: `radial-gradient(circle at top right, ${alpha(
+          brand.green,
+          0.06
+        )} 0%, transparent 20%), radial-gradient(circle at left top, ${alpha(
+          brand.navy,
+          0.05
+        )} 0%, transparent 28%), ${brand.grayBg}`,
       }}
     >
-      {/* ✅ FULL-WIDTH PAGE WRAPPER */}
       <Container
         maxWidth={false}
         disableGutters
@@ -189,7 +208,6 @@ export default function ListingPage() {
           px: { xs: 2, sm: 3, md: 5, lg: 8 },
         }}
       >
-        {/* Top header */}
         <Stack
           direction={{ xs: "column", md: "row" }}
           justifyContent="space-between"
@@ -197,57 +215,89 @@ export default function ListingPage() {
           spacing={2}
           sx={{ mb: 3 }}
         >
-          <Stack direction="row" spacing={1.25} alignItems="center">
-            <Avatar sx={{ bgcolor: "rgba(255,255,255,0.06)" }}>
-              <Inventory2Icon />
-            </Avatar>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography
-                variant="h4"
-                sx={{ fontWeight: 900, letterSpacing: "-0.02em" }}
-                noWrap
-              >
-                {loading ? "Loading…" : item?.title || "Listing"}
-              </Typography>
-
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.75 }}>
-                {loading ? (
-                  <>
-                    <Skeleton variant="rounded" width={90} height={28} sx={skel} />
-                    <Skeleton variant="rounded" width={110} height={28} sx={skel} />
-                  </>
-                ) : (
-                  <>
-                    <Chip label={item?.status || "ACTIVE"} size="small" sx={pill} />
-                    <Chip
-                      label={(item?.condition || "").replaceAll("_", " ") || "—"}
-                      size="small"
-                      sx={pill}
-                    />
-                    {(item?.techTypes || []).slice(0, 2).map((t) => (
-                      <Chip key={t} label={t} size="small" sx={pillGhost} />
-                    ))}
-                  </>
-                )}
-              </Stack>
+          <Box>
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 1,
+                px: 1.5,
+                py: 0.75,
+                borderRadius: 999,
+                bgcolor: alpha(brand.green, 0.08),
+                border: `1px solid ${alpha(brand.green, 0.18)}`,
+                color: brand.green,
+                mb: 2,
+              }}
+            >
+              <SellRoundedIcon sx={{ fontSize: 18 }} />
+              <Typography sx={eyebrowSx}>Listing details</Typography>
             </Box>
-          </Stack>
 
-          {/* Actions */}
-          <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1.25} alignItems="center">
+              <Avatar
+                sx={{
+                  bgcolor: alpha(brand.navy, 0.08),
+                  color: brand.navy,
+                  border: `1px solid ${alpha(brand.navy, 0.12)}`,
+                }}
+              >
+                <Inventory2Icon />
+              </Avatar>
+
+              <Box sx={{ minWidth: 0 }}>
+                <Typography sx={pageTitleSx} noWrap>
+                  {loading ? "Loading..." : item?.title || "Listing"}
+                </Typography>
+
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ mt: 0.9, flexWrap: "wrap" }}
+                >
+                  {loading ? (
+                    <>
+                      <Skeleton
+                        variant="rounded"
+                        width={90}
+                        height={28}
+                        sx={{ ...skeletonSx, borderRadius: 999 }}
+                      />
+                      <Skeleton
+                        variant="rounded"
+                        width={110}
+                        height={28}
+                        sx={{ ...skeletonSx, borderRadius: 999 }}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <Chip label={item?.status || "ACTIVE"} size="small" sx={pillSx} />
+                      <Chip
+                        label={(item?.condition || "").replaceAll("_", " ") || "—"}
+                        size="small"
+                        sx={pillSx}
+                      />
+                      {(item?.techTypes || []).slice(0, 2).map((t) => (
+                        <Chip key={t} label={t} size="small" sx={pillGhostSx} />
+                      ))}
+                    </>
+                  )}
+                </Stack>
+              </Box>
+            </Stack>
+          </Box>
+
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
             <Button
               onClick={addToCart}
               disabled={loading || cartBusy}
               variant="contained"
               startIcon={<ShoppingCartIcon />}
-              sx={{
-                bgcolor: "#e6eef7",
-                color: "#0b0f14",
-                fontWeight: 900,
-                "&:hover": { bgcolor: "#cfe0f4" },
-              }}
+              sx={primaryButtonSx}
             >
-              {cartBusy ? "Adding…" : "Add to cart"}
+              {cartBusy ? "Adding..." : "Add to cart"}
             </Button>
 
             <Button
@@ -255,25 +305,23 @@ export default function ListingPage() {
               disabled={loading || reserveBusy}
               variant="outlined"
               startIcon={<ScheduleIcon />}
-              sx={{
-                borderColor: "rgba(255,255,255,0.22)",
-                color: "rgba(255,255,255,0.9)",
-                "&:hover": { borderColor: "rgba(255,255,255,0.4)" },
-              }}
+              sx={secondaryButtonSx}
             >
-              {reserveBusy ? "Holding…" : "Hold 15 min"}
+              {reserveBusy ? "Holding..." : "Hold 15 min"}
             </Button>
           </Stack>
         </Stack>
 
-        <Grid container spacing={3}>
-          {/* Left: gallery + description */}
+        <Grid container spacing={2.25}>
           <Grid item xs={12} lg={8}>
-            <Card elevation={0} sx={quietCard}>
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                {/* Hero image */}
+            <Card elevation={0} sx={panelCardSx}>
+              <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
                 {loading ? (
-                  <Skeleton variant="rounded" height={420} sx={{ ...skel, borderRadius: 3 }} />
+                  <Skeleton
+                    variant="rounded"
+                    height={420}
+                    sx={{ ...skeletonSx, borderRadius: 4 }}
+                  />
                 ) : coverPhoto ? (
                   <Box
                     component="img"
@@ -283,28 +331,30 @@ export default function ListingPage() {
                       width: "100%",
                       height: { xs: 280, md: 420 },
                       objectFit: "cover",
-                      borderRadius: 3,
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: 4,
+                      border: `1px solid ${brand.border}`,
+                      display: "block",
                     }}
                   />
                 ) : (
                   <Box
                     sx={{
                       height: { xs: 280, md: 420 },
-                      borderRadius: 3,
-                      border: "1px dashed rgba(255,255,255,0.18)",
+                      borderRadius: 4,
+                      border: `1px dashed ${brand.border}`,
                       display: "grid",
                       placeItems: "center",
-                      color: "rgba(230,238,247,0.7)",
+                      color: brand.muted,
+                      bgcolor: brand.grayBg,
+                      fontFamily: '"Semplicita Pro", sans-serif',
                     }}
                   >
                     No photo uploaded
                   </Box>
                 )}
 
-                {/* Thumbs */}
                 {!loading && (item?.photos || []).length > 1 && (
-                  <Grid container spacing={1} sx={{ mt: 1.5 }}>
+                  <Grid container spacing={1.25} sx={{ mt: 1.75 }}>
                     {item.photos.slice(0, 10).map((p, idx) => (
                       <Grid item xs={3} sm={2} key={`${p}-${idx}`}>
                         <Box
@@ -315,8 +365,9 @@ export default function ListingPage() {
                             width: "100%",
                             height: 78,
                             objectFit: "cover",
-                            borderRadius: 2,
-                            border: "1px solid rgba(255,255,255,0.08)",
+                            borderRadius: 2.5,
+                            border: `1px solid ${brand.border}`,
+                            display: "block",
                           }}
                         />
                       </Grid>
@@ -324,37 +375,33 @@ export default function ListingPage() {
                   </Grid>
                 )}
 
-                <Divider sx={divider} />
+                <Divider sx={sectionDividerSx} />
 
-                {/* Description */}
-                <Typography variant="h6" sx={{ fontWeight: 900, mb: 1 }}>
-                  Description
-                </Typography>
+                <SectionHeader
+                  title="Description"
+                  subtitle="Item condition, included accessories, and other relevant details."
+                />
+
                 {loading ? (
                   <>
-                    <Skeleton variant="text" sx={skel} />
-                    <Skeleton variant="text" sx={skel} />
-                    <Skeleton variant="text" sx={skel} />
+                    <Skeleton variant="text" sx={skeletonSx} />
+                    <Skeleton variant="text" sx={skeletonSx} />
+                    <Skeleton variant="text" sx={skeletonSx} />
                   </>
                 ) : (
-                  <Typography
-                    sx={{
-                      color: "rgba(230,238,247,0.8)",
-                      whiteSpace: "pre-wrap",
-                    }}
-                  >
+                  <Typography sx={bodyTextSx}>
                     {item?.description || "No description provided."}
                   </Typography>
                 )}
 
-                {/* Notes / extras */}
                 {!loading && (item?.gradeNotes || item?.notes) && (
                   <>
-                    <Divider sx={divider} />
-                    <Typography variant="h6" sx={{ fontWeight: 900, mb: 1 }}>
-                      Notes
-                    </Typography>
-                    <Typography sx={{ color: "rgba(230,238,247,0.8)", whiteSpace: "pre-wrap" }}>
+                    <Divider sx={sectionDividerSx} />
+                    <SectionHeader
+                      title="Notes"
+                      subtitle="Additional notes supplied by the seller."
+                    />
+                    <Typography sx={bodyTextSx}>
                       {item?.gradeNotes || item?.notes}
                     </Typography>
                   </>
@@ -363,151 +410,147 @@ export default function ListingPage() {
             </Card>
           </Grid>
 
-          {/* Right: details */}
           <Grid item xs={12} lg={4}>
-            <Stack spacing={2}>
-              {/* Price card */}
-              <Card elevation={0} sx={quietCard}>
-                <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                  <Typography sx={{ color: "rgba(230,238,247,0.7)", fontWeight: 700 }}>
-                    Rescue price
-                  </Typography>
+            <Stack spacing={2.25}>
+              <Card elevation={0} sx={panelCardSx}>
+                <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
+                  <Typography sx={sectionSubSx}>Rescue price</Typography>
+
                   {loading ? (
-                    <Skeleton variant="text" width="40%" sx={{ ...skel, fontSize: 42 }} />
+                    <Skeleton
+                      variant="text"
+                      width="45%"
+                      sx={{ ...skeletonSx, fontSize: 42 }}
+                    />
                   ) : (
-                    <Typography variant="h3" sx={{ fontWeight: 1000, letterSpacing: "-0.02em" }}>
+                    <Typography sx={priceValueSx}>
                       ${price.toLocaleString()}
                     </Typography>
                   )}
 
-                  <Divider sx={divider} />
+                  <Divider sx={sectionDividerSx} />
 
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    <Chip icon={<VerifiedIcon />} label="Buyer protection" sx={pill} />
-                    <Chip icon={<LocalShippingIcon />} label="Ready for pickup / ship" sx={pillGhost} />
+                    <Chip
+                      icon={<VerifiedIcon />}
+                      label="Buyer protection"
+                      sx={pillSx}
+                    />
+                    <Chip
+                      icon={<LocalShippingIcon />}
+                      label="Ready for pickup / ship"
+                      sx={pillGhostSx}
+                    />
                   </Stack>
                 </CardContent>
               </Card>
 
-              {/* Device details */}
-              <Card elevation={0} sx={quietCard}>
-                <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                  <Typography variant="h6" sx={{ fontWeight: 900, mb: 1 }}>
-                    Device details
-                  </Typography>
+              <Card elevation={0} sx={panelCardSx}>
+                <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
+                  <SectionHeader
+                    title="Device details"
+                    subtitle="Core information and identifying attributes."
+                  />
 
                   {loading ? (
                     <Stack spacing={1}>
-                      <Skeleton variant="rounded" height={44} sx={{ ...skel, borderRadius: 2 }} />
-                      <Skeleton variant="rounded" height={44} sx={{ ...skel, borderRadius: 2 }} />
-                      <Skeleton variant="rounded" height={44} sx={{ ...skel, borderRadius: 2 }} />
+                      <Skeleton
+                        variant="rounded"
+                        height={44}
+                        sx={{ ...skeletonSx, borderRadius: 2.5 }}
+                      />
+                      <Skeleton
+                        variant="rounded"
+                        height={44}
+                        sx={{ ...skeletonSx, borderRadius: 2.5 }}
+                      />
+                      <Skeleton
+                        variant="rounded"
+                        height={44}
+                        sx={{ ...skeletonSx, borderRadius: 2.5 }}
+                      />
                     </Stack>
                   ) : (
-                    <Stack spacing={1}>
+                    <Stack spacing={1.15}>
                       <DetailRow label="Brand" value={item?.brand || "—"} />
                       <DetailRow label="Model" value={item?.model || "—"} />
                       <DetailRow label="Make" value={item?.make || "—"} />
                       <DetailRow label="Category" value={item?.category || "—"} />
                       <DetailRow
                         label="Tech types"
-                        value={(item?.techTypes || []).length ? item.techTypes.join(", ") : "—"}
+                        value={
+                          (item?.techTypes || []).length
+                            ? item.techTypes.join(", ")
+                            : "—"
+                        }
                       />
                       <DetailRow
                         label="Device types"
-                        value={(item?.deviceTypes || []).length ? item.deviceTypes.join(", ") : "—"}
+                        value={
+                          (item?.deviceTypes || []).length
+                            ? item.deviceTypes.join(", ")
+                            : "—"
+                        }
                       />
 
-                      <Divider sx={divider} />
+                      <Divider sx={sectionDividerSx} />
 
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography sx={{ minWidth: 120, color: "rgba(230,238,247,0.7)", fontWeight: 700 }}>
-                          Serial
-                        </Typography>
-                        <Typography sx={{ color: "rgba(230,238,247,0.9)", fontWeight: 800, flex: 1 }}>
-                          {item?.serialnumber || "—"}
-                        </Typography>
-                        {item?.serialnumber && (
-                          <Tooltip title="Copy">
-                            <IconButton
-                              size="small"
-                              onClick={() => copy("Serial number", item.serialnumber)}
-                              sx={{ color: "rgba(255,255,255,0.8)" }}
-                            >
-                              <ContentCopyIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Stack>
+                      <CopyRow
+                        label="Serial"
+                        value={item?.serialnumber || "—"}
+                        copyValue={item?.serialnumber}
+                        onCopy={() => copy("Serial number", item.serialnumber)}
+                      />
 
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography sx={{ minWidth: 120, color: "rgba(230,238,247,0.7)", fontWeight: 700 }}>
-                          MAC
-                        </Typography>
-                        <Typography sx={{ color: "rgba(230,238,247,0.9)", fontWeight: 800, flex: 1 }}>
-                          {item?.macaddress || "—"}
-                        </Typography>
-                        {item?.macaddress && (
-                          <Tooltip title="Copy">
-                            <IconButton
-                              size="small"
-                              onClick={() => copy("MAC address", item.macaddress)}
-                              sx={{ color: "rgba(255,255,255,0.8)" }}
-                            >
-                              <ContentCopyIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Stack>
+                      <CopyRow
+                        label="MAC"
+                        value={item?.macaddress || "—"}
+                        copyValue={item?.macaddress}
+                        onCopy={() => copy("MAC address", item.macaddress)}
+                      />
                     </Stack>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Pickup / location */}
-              <Card elevation={0} sx={quietCard}>
-                <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                    <LocationOnIcon />
-                    <Typography variant="h6" sx={{ fontWeight: 900 }}>
-                      Pickup
-                    </Typography>
+              <Card elevation={0} sx={panelCardSx}>
+                <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
+                  <Stack direction="row" spacing={1.1} alignItems="center" sx={{ mb: 1 }}>
+                    <LocationOnIcon sx={{ color: brand.navy }} />
+                    <Typography sx={sectionTitleSx}>Pickup</Typography>
                   </Stack>
 
                   {loading ? (
                     <>
-                      <Skeleton variant="text" sx={skel} />
-                      <Skeleton variant="text" sx={skel} />
+                      <Skeleton variant="text" sx={skeletonSx} />
+                      <Skeleton variant="text" sx={skeletonSx} />
                     </>
                   ) : item?.pickup?.address ? (
-                    <Typography sx={{ color: "rgba(230,238,247,0.8)" }}>
+                    <Typography sx={bodyTextSx}>
                       {item.pickup.address.street || "—"}
                       <br />
-                      {item.pickup.address.city || "—"}, {item.pickup.address.state || "—"}{" "}
+                      {item.pickup.address.city || "—"},{" "}
+                      {item.pickup.address.state || "—"}{" "}
                       {item.pickup.address.zip || ""}
                     </Typography>
                   ) : (
-                    <Typography sx={{ color: "rgba(230,238,247,0.72)" }}>
+                    <Typography sx={bodyTextSx}>
                       No pickup address provided.
                     </Typography>
                   )}
 
-                  <Divider sx={divider} />
+                  <Divider sx={sectionDividerSx} />
 
-                  <Stack direction="row" spacing={1}>
+                  <Stack direction="row" spacing={1.25}>
                     <Button
                       fullWidth
                       variant="contained"
                       onClick={addToCart}
                       disabled={loading || cartBusy}
                       startIcon={<ShoppingCartIcon />}
-                      sx={{
-                        bgcolor: "#e6eef7",
-                        color: "#0b0f14",
-                        fontWeight: 900,
-                        "&:hover": { bgcolor: "#cfe0f4" },
-                      }}
+                      sx={primaryButtonSx}
                     >
-                      {cartBusy ? "Adding…" : "Add to cart"}
+                      {cartBusy ? "Adding..." : "Add to cart"}
                     </Button>
 
                     <Button
@@ -516,13 +559,9 @@ export default function ListingPage() {
                       onClick={reserve}
                       disabled={loading || reserveBusy}
                       startIcon={<ScheduleIcon />}
-                      sx={{
-                        borderColor: "rgba(255,255,255,0.22)",
-                        color: "rgba(255,255,255,0.9)",
-                        "&:hover": { borderColor: "rgba(255,255,255,0.4)" },
-                      }}
+                      sx={secondaryButtonSx}
                     >
-                      {reserveBusy ? "Holding…" : "Hold"}
+                      {reserveBusy ? "Holding..." : "Hold"}
                     </Button>
                   </Stack>
                 </CardContent>
@@ -530,10 +569,11 @@ export default function ListingPage() {
 
               <Button
                 variant="text"
+                startIcon={<ArrowBackRoundedIcon />}
                 onClick={() => navigate(-1)}
-                sx={{ color: "rgba(255,255,255,0.8)" }}
+                sx={backButtonSx}
               >
-                ← Back
+                Back
               </Button>
             </Stack>
           </Grid>
@@ -543,45 +583,163 @@ export default function ListingPage() {
   );
 }
 
-/* ——— Small UI bits ——— */
+function SectionHeader({ title, subtitle }) {
+  return (
+    <Box sx={{ mb: 1.25 }}>
+      <Typography sx={sectionTitleSx}>{title}</Typography>
+      {subtitle ? <Typography sx={sectionSubSx}>{subtitle}</Typography> : null}
+    </Box>
+  );
+}
+
 function DetailRow({ label, value }) {
   return (
     <Stack direction="row" spacing={1} alignItems="center">
-      <Typography
-        sx={{
-          minWidth: 120,
-          color: "rgba(230,238,247,0.7)",
-          fontWeight: 700,
-        }}
-      >
-        {label}
-      </Typography>
-      <Typography sx={{ color: "rgba(230,238,247,0.9)", fontWeight: 800 }}>
-        {value}
-      </Typography>
+      <Typography sx={detailLabelSx}>{label}</Typography>
+      <Typography sx={detailValueSx}>{value}</Typography>
     </Stack>
   );
 }
 
-/* ——— Styles ——— */
-const quietCard = {
-  bgcolor: "rgba(255,255,255,0.02)",
-  border: "1px solid rgba(255,255,255,0.08)",
+function CopyRow({ label, value, copyValue, onCopy }) {
+  return (
+    <Stack direction="row" spacing={1} alignItems="center">
+      <Typography sx={detailLabelSx}>{label}</Typography>
+      <Typography sx={{ ...detailValueSx, flex: 1 }}>{value}</Typography>
+      {copyValue ? (
+        <Tooltip title="Copy">
+          <IconButton size="small" onClick={onCopy} sx={{ color: brand.navy }}>
+            <ContentCopyIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      ) : null}
+    </Stack>
+  );
+}
+
+const panelCardSx = {
+  borderRadius: 5,
+  border: `1px solid ${brand.border}`,
+  bgcolor: brand.white,
+  boxShadow: "0 12px 32px rgba(30, 58, 95, 0.05)",
+};
+
+const primaryButtonSx = {
+  bgcolor: brand.navy,
+  color: brand.white,
+  fontWeight: 700,
+  textTransform: "none",
   borderRadius: 3,
+  boxShadow: "none",
+  fontFamily: '"Semplicita Pro", sans-serif',
+  "&:hover": {
+    bgcolor: "#16304F",
+    boxShadow: "none",
+  },
 };
 
-const pill = {
-  bgcolor: "transparent",
-  border: "1px solid rgba(255,255,255,0.16)",
-  color: "rgba(255,255,255,0.88)",
-  backdropFilter: "blur(4px)",
+const secondaryButtonSx = {
+  borderColor: brand.border,
+  color: brand.navy,
+  fontWeight: 700,
+  textTransform: "none",
+  borderRadius: 3,
+  fontFamily: '"Semplicita Pro", sans-serif',
+  "&:hover": {
+    borderColor: brand.navy,
+    bgcolor: alpha(brand.navy, 0.03),
+  },
 };
 
-const pillGhost = {
-  bgcolor: "rgba(255,255,255,0.06)",
-  color: "rgba(255,255,255,0.9)",
+const backButtonSx = {
+  color: brand.navy,
+  textTransform: "none",
+  fontWeight: 700,
+  alignSelf: "flex-start",
+  fontFamily: '"Semplicita Pro", sans-serif',
+  "&:hover": {
+    bgcolor: "transparent",
+    color: brand.green,
+  },
 };
 
-const divider = { borderColor: "rgba(255,255,255,0.08)", my: 2 };
+const pillSx = {
+  bgcolor: alpha(brand.navy, 0.05),
+  color: brand.navy,
+  border: `1px solid ${alpha(brand.navy, 0.12)}`,
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
 
-const skel = { bgcolor: "rgba(255,255,255,0.06)" };
+const pillGhostSx = {
+  bgcolor: alpha(brand.green, 0.08),
+  color: brand.green,
+  border: `1px solid ${alpha(brand.green, 0.14)}`,
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const sectionDividerSx = {
+  my: 2,
+  borderColor: brand.border,
+};
+
+const skeletonSx = {
+  bgcolor: alpha(brand.navy, 0.08),
+};
+
+const eyebrowSx = {
+  fontSize: 13,
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const pageTitleSx = {
+  fontFamily: '"vvyPreston Display", serif',
+  fontSize: { xs: 30, md: 42 },
+  lineHeight: 1.05,
+  color: brand.navy,
+};
+
+const sectionTitleSx = {
+  fontSize: 22,
+  fontWeight: 800,
+  color: brand.navy,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const sectionSubSx = {
+  fontSize: 14,
+  lineHeight: 1.7,
+  color: brand.muted,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const bodyTextSx = {
+  color: brand.muted,
+  whiteSpace: "pre-wrap",
+  lineHeight: 1.8,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const detailLabelSx = {
+  minWidth: 120,
+  color: brand.muted,
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const detailValueSx = {
+  color: brand.text,
+  fontWeight: 700,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
+
+const priceValueSx = {
+  fontSize: { xs: 38, md: 46 },
+  lineHeight: 1.05,
+  fontWeight: 900,
+  letterSpacing: "-0.02em",
+  color: brand.navy,
+  fontFamily: '"Semplicita Pro", sans-serif',
+};
