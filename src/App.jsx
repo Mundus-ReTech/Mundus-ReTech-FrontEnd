@@ -11,6 +11,7 @@ import Login from "./pages/LogIn";
 import SmallBusinessDashboard from "./pages/SmallBusinessDashboard";
 import EnterpriseBusinessDashboard from "./pages/EnterpriseBusinessDashboard";
 import NewListingPage from "./pages/NewListing";
+import PrivacyPage from './pages/PrivacyPolicy';
 import CheckoutForm from "./pages/CheckoutForm";
 import Cart from "./pages/Cart";
 import Return from "./pages/Return";
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/policy" element={<PrivacyPage/>} />
 
         <Route
           path="/dashboard/smb"
